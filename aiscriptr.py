@@ -1,6 +1,83 @@
 ##A scripting tool
 # Import the pyperclip module.
 import pyperclip
+from openai import OpenAI
+from bs4 import BeautifulSoup
+
+zd_messages_str = ""
+def get_zd_messages():
+    zd_messages = []
+    html_content = pyperclip.paste()
+    soup = BeautifulSoup(html_content, 'html.parser')
+
+    class_kandy = 'sc-1o8vn6d-0 fcCUeL'
+    class_kandy2 = 'sc-5rafq2-0 gEMoXX'
+    class_kandy3 = 'sc-1m2sbuc-1 glubzr'
+    class_chat = 'sc-wv3hte-1 epkhmy'
+    class_chat2 = 'sc-wv3hte-0 eKImJ'
+
+    for div in soup.find_all('div', {'class': ['sc-54nfmn-1 bthKwz','sc-1qvpxi4-1 lvXye','sc-i0djx2-0 fwLKxM',class_kandy2,class_chat,class_chat2]}):
+        if div is None:
+            print("No div") 
+        else:
+        # Get the Name
+            sender_name = "No name"
+            for title in div.find_all_previous('div', {'class': ['sc-1gwyeaa-2 icjiLH','sc-yhpsva-1 dtIjfP']}):
+                strong_text = title.find('strong')
+                if strong_text:
+                    sender_name = strong_text.text
+                    break
+        # Get the Comment      
+            comment_div = div.find('div', {'class': ['zd-comment','zd-comment zd-comment-pre-styled',class_chat,class_chat2]})
+            comment_text = "No comment"
+            if comment_div is not None:
+                comment_text = comment_div.text[:2000]
+            #print(comment_div)
+            zd_messages.append(f"{sender_name}: \n Comment - {comment_text}")
+
+    zd_messages_str = "\n".join(zd_messages)
+    return zd_messages_str[-3000:]
+
+conversation = get_zd_messages()
+def get_intuitPR(conversation,dictname):
+    client = OpenAI()
+    information = input("Provide context now:")
+    completion = client.chat.completions.create(
+      model="gpt-4-1106-preview",
+      messages=[
+        {"role": "system", "content": "You are a customer support agent trained in responding to customers without promising resolution. If appropriate you can give them some assurance that their issue or request is being handled. Customers that reach out via email are either facing a technical issue or looking to get a request processed, and actioned."},
+        {"role": "user", "content": f"""
+
+    Write a response to the last message from the customer in a conversation provided to you.  Make sure of the following:
+    -Be direct and use action oriented language.
+    -Don't be too wordy.
+    -Use a salutation like "Dear [Customer's First Name]"
+    -Only if there are no messages from the support team, and only messages from bots or customers,he first line should be Thank you for contacting [Product] Support team. I understand ...
+    -There should be no byline.
+    -The meat and bones of the reply should be based on the information provided to you as input. Draft a response considering that information and regurgitating it if appropriate.
+
+    I am providing the following information
+
+    Conversation: {conversation}
+    Information: {information}
+    """}
+      ]
+    )
+    string = str(completion.choices[0].message.content)
+    start_idx = string.find("Warm regards,")
+    if start_idx == -1:
+        start_idx = string.find("Best regards,")
+    if start_idx == -1:
+        start_idx = string.find("Regards,")
+    if start_idx == -1:
+        start_idx = string.find("Sincerely,")
+    if start_idx != -1:
+        string = string[:start_idx]
+    else:
+        string = string
+    dictname["intuitPR"] = string
+    
+
 products = {
     "vd": "Volt Delta (NA)",
     "exnda": "GFI - Exinda Network Orchestrator",
@@ -41,6 +118,7 @@ products = {
     "bz": "Northplains Xient",
     "sky": "Skyvera Analytics",
     "acorn": "Acorn",
+    "l3" : "Learn and Earn",
     }
 
 
@@ -74,6 +152,7 @@ jira_links = {
     "tnk": "https://trilogy-eng.atlassian.net/jira/software/c/projects/KAYAKO/issues",
     "bz": "https://workstation-df.atlassian.net/jira/core/projects/IGBIZOPS/issues",
     "sky": "no JIRA",
+    "l3" : "no JIRA",
     }
  
 
@@ -142,6 +221,7 @@ elements = {
     "prepesc4": "**Zendesk Ticket IDs:** &nbsp;\n",
     "prepesc5": "**Attachments:** &nbsp;\n",
     "prepesc6": "**Unit Type:** &nbsp;\n",    
+    "intuitPR": "",
 }
 
 #define a function to modify the final string
@@ -152,6 +232,7 @@ def modifystring(string, scenario,product):
     string = string.replace("**On Hold Reason:** &nbsp;", "**On Hold Reason:** &nbsp; " + scenario_reason[scenario])
     string = string.replace("**On Hold Timer:** &nbsp; &nbsp; ", "**On Hold Timer:** &nbsp; &nbsp; " + scenario_timer[scenario])
     string = string.replace("**Escalation Target:** &nbsp; &nbsp; \n", "**Escalation Target:** &nbsp; &nbsp; " + scenario_target[scenario] + "\n")
+    string = string.replace("[Product]", products[product])
     return string
 
 # Define a function to iterate over list and extract the values, then do lookup by key and print values
@@ -175,7 +256,7 @@ def pscenario(scenario,product):
 sbasic = ["instlink","action", "divider", "context"]
 sbpre = sbasic[:2]
 scntxt = sbasic[2:]
-spr = ["pr", "byline"]
+spr = ["pr", "intuitPR", "byline"]
 sdvdr = ["divider"]
 gpt = ["divider", "gpt", "gptyes"]
 meta = ["mxteam", "mhreason", "mhtimer", "mhtarget"]
@@ -204,6 +285,8 @@ scenarios = {
     "clstn": sbpre + ["clstop"] + scntxt + ["ret"],
     "clsch": sbpre + ["clscop"],
     }
+
+scenarios_requiring_pr = ["cst", "ex", "exsaas", "exold", "exb", "excf", "exbz","l2", "clst", "clsth"]
 
 #Define the external team with scenarios
 scenario_ext = {"ex":"Internal", 
@@ -286,15 +369,18 @@ scenario_target = {"ex":"Other",
 
 #Let user choose scenario and repeat in a while loop until quit is entered
 
-while True:
+def main():
     for name in scenarios:
         print(name)
     chosen_scenario = input()
-    if chosen_scenario == "quit":
+    if chosen_scenario == "quit": 
         print("Goodbye!")
-        break
+        sys.exit()
     elif chosen_scenario in scenarios:
-        product = input()
+        product = input("Product:")
+        if chosen_scenario in scenarios_requiring_pr:
+            conversation = get_zd_messages()
+            get_intuitPR(conversation,elements)
         finalstring = pscenario(scenarios[chosen_scenario],product)
         finalstring = modifystring(finalstring,chosen_scenario,product)
         print(finalstring)
@@ -311,5 +397,5 @@ for scenario, element_seq in scenarios.items():
         if elmnt not in elements:
             print(f"Warning: Element '{elmnt}' in scenario '{scenario}' is not defined!")
 
-
+main()
 

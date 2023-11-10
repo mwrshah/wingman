@@ -4,6 +4,23 @@ import pyperclip
 from openai import OpenAI
 from bs4 import BeautifulSoup
 
+product = "Not defined"
+
+#def get_product():
+#    html_content = pyperclip.paste()
+#    if html_content.find("<html lang") != -1:
+#        soup = BeautifulSoup(html_content, 'html.parser')
+#        all_labels = soup.find_all('label',{'class':'sc-anv20o-4 iIWDoF StyledLabel-sc-2utmsz-0 bYrRLL'})
+#        for label in all_labels:
+#            if label.text.find("Product") != -1:
+#                return label.find_next('div', {class: "StyledEllipsis-sc-1u4uqmy-0 gxcmGf"}).text
+#        else:    
+#
+#            product = label.text
+#        product = product[:product.find(" Support")]
+#        print(product)
+#        return product
+
 zd_messages_str = ""
 def get_zd_messages():
     zd_messages = []
@@ -36,9 +53,45 @@ def get_zd_messages():
             zd_messages.append(f"{sender_name}: \n Comment - {comment_text}")
 
     zd_messages_str = "\n".join(zd_messages)
-    return zd_messages_str[-3000:]
+
+#Add a feature to scrape the first message if it is an IN. Not tested yet.
+    first_IN = ""
+    for div in soup.find_all('div', {'class':'sc-1wvqs23-0 dTcJJt'}):
+        if div is None:
+            print("No div when looking for first IN ATTENTION")
+        else:
+            all_comments = div.find_all_next('div', {'class': ['zd-comment','zd-comment zd-comment-pre-styled']})
+            if all_comments:
+                for comment in all_comments:   
+                    first_comment =  comment.text
+                    first_IN = first_comment
+                    break
+            strong_text = div.find('strong')
+            sender_name = "No name"
+            if strong_text:
+                sender_name = strong_text.text
+            first_IN = sender_name + ": \n " + "Comment - " + first_comment
+        break
+    if first_IN[:50] == zd_messages_str[:50]:
+        print("IT IS TRUE THAT IT'S THE SAME")
+    print(".")
+    print(".")
+    print(".")
+
+    if zd_messages_str[:50] != first_IN[:50]:
+        zd_messages_str = first_IN + "\n" + zd_messages_str
+    
+    return zd_messages_str[-7000:]
 
 conversation = get_zd_messages()
+print(conversation)
+print(".")
+print(".")
+print(".")
+print(".")
+print(".")
+print(".")
+print(".")
 def get_intuitPR(conversation,dictname):
     client = OpenAI()
     information = input("Provide context now:")
@@ -71,12 +124,45 @@ def get_intuitPR(conversation,dictname):
         start_idx = string.find("Regards,")
     if start_idx == -1:
         start_idx = string.find("Sincerely,")
+    if start_idx == -1:
+        start_idx = string.find("Kind regards,")
     if start_idx != -1:
         string = string[:start_idx]
     else:
         string = string
     dictname["intuitPR"] = string
     
+def get_intuitEsc(conversation,response,dictname):
+    client = OpenAI()
+    subject = client.chat.completions.create(
+            model="gpt-4-1106-preview",
+            messages=[
+                {"role":"system","content": "You are a customer support agent trained in handling customer issues, for which you have to create work units for the finance and other teams within the company"},
+                {"role":"user","content": f"""considering the conversation and response sent already to the customer, prepere an escalation to the finance or other team as relevant, being mindful that:
+-you should be concise
+-you should be precise
+-you should use a brevity of words
+-start with "Subject:"
+-start the body with "Description:
+-no byline"
+Here is the conversation: {conversation}
+Here is the response: {response}"""}
+                ]
+            )
+    string = str(subject.choices[0].message.content)
+    start_idx = string.find("Subject:")+8
+    end_idx = string.find("Description:")
+    if start_idx != -1 and end_idx != -1:
+        subj_string = string[start_idx:end_idx]
+    else:
+        subj_string = string
+    dictname["prepesc2"] = "**Subject:** &nbsp;" + subj_string
+    start_idx2 = string.find("Description:")+12
+    if start_idx2 != -1:
+        desc_string = string[start_idx2:]
+    else:
+        desc_string = string
+    dictname["prepesc3"] = "**Description:** &nbsp;\n" + desc_string + "\n"
 
 products = {
     "vd": "Volt Delta (NA)",
@@ -210,13 +296,12 @@ elements = {
     "sc1": "**SC**&nbsp;",
     "sc2": "**Subject:**&nbsp;NA",
     "sc3": "**Description:**&nbsp;\n",
-    
     "sc4": "**Attachments:**&nbsp; NA\n",
     #Pieces of JIRA escalation
 #Insert JIRA link from jira_links dict
     "jirabiz": "[Jira link]",
     "prepesc1": "**Issue Type:** Task\n",
-    "prepesc2": "**Subject:** &nbsp;\n",
+    "prepesc2": "**Subject:** &nbsp;NA\n",
     "prepesc3": "**Description:** &nbsp;\n",
     "prepesc4": "**Zendesk Ticket IDs:** &nbsp;\n",
     "prepesc5": "**Attachments:** &nbsp;\n",
@@ -227,7 +312,12 @@ elements = {
 #define a function to modify the final string
 def modifystring(string, scenario,product):
     string = string.replace("Support Team", products[product] + " Support Team")
-    string = string.replace("[Jira link]", "[Jira link](" + jira_links[product] + ")")
+    if scenario in scenarios_requiring_bzjira:
+        string = string.replace("[Jira link]", "[Jira link](" + jira_links["bz"] + ")")
+    elif scenario in scenarios_requiring_cfjira:
+        string = string.replace("[Jira link]", "[Jira link](" + jira_links["cf"] + ")")
+    else:
+        string = string.replace("[Jira link]", "[Jira link](" + jira_links[product] + ")")
     string = string.replace("**External Team:** &nbsp; ", "**External Team:** &nbsp; " + scenario_ext[scenario])
     string = string.replace("**On Hold Reason:** &nbsp;", "**On Hold Reason:** &nbsp; " + scenario_reason[scenario])
     string = string.replace("**On Hold Timer:** &nbsp; &nbsp; ", "**On Hold Timer:** &nbsp; &nbsp; " + scenario_timer[scenario])
@@ -263,30 +353,33 @@ meta = ["mxteam", "mhreason", "mhtimer", "mhtarget"]
 jira = ["jirabiz", "prepesc1", "prepesc2", "prepesc3", "prepesc4", "prepesc5", "prepesc6"]
 cjira = ["jirabiz", "prepesc1", "prepesc2", "prepesc3", "prepesc6", "prepesc4", "prepesc5"]
 sjira = ["jirabiz", "prepesc1", "prepesc2", "prepesc3", "prepesc4"]
-sc = ["sc1", "sc2","sc3","sc4"]
+sc = ["sc1", "prepesc2","prepesc3","sc4"]
 
 scenarios = {
     "basic": sbasic,
     "tsk": sbpre + ["l1op"] + scntxt + ["blurbtask"],
     "cst": sbpre + ["custop"] + sdvdr + spr + gpt + scntxt+ ["ret"],
-    "ex": sbpre + ["extop"] + sdvdr + spr + meta + sc + scntxt+ ["ret"],
-    "exsaas": sbpre + ["extop"] + sdvdr + spr + meta + sjira + scntxt+ ["ret"],
-    "exold": sbpre + ["extop"] + sdvdr + spr + meta + scntxt+ ["ret"], 
+    "ex": sbpre + ["extop"] + sdvdr + spr + meta + sc + gpt + scntxt+ ["ret"],
+    "exsaas": sbpre + ["extop"] + sdvdr + spr + meta + sjira + gpt + scntxt+ ["ret"],
+    "exold": sbpre + ["extop"] + sdvdr + spr + meta + gpt + scntxt+ ["ret"], 
     "exn": sbpre + ["extop"] + meta + scntxt + ["ret"]+ ["ret"],
-    "exb": sbpre + ["extop"] + ["buop"] + sdvdr + spr + meta + ["e2b"] + scntxt + ["blurbbu"]+ ["ret"],
-    "excf": sbpre + ["extop"] + sdvdr + spr + meta + cjira + scntxt+ ["ret"],
+    "exb": sbpre + ["extop"] + ["buop"] + sdvdr + spr + meta + ["e2b"] + gpt +scntxt + ["blurbbu"]+ ["ret"],
+    "excf": sbpre + ["extop"] + sdvdr + spr + meta + cjira + gpt + scntxt+ ["ret"],
     "exbn": sbpre + ["extop"] + ["buop"] + scntxt + ["blurbbu", "e2b"],
-    "exbz": sbpre + ["extop"] + sdvdr + spr + meta + jira + scntxt+ ["ret"],
-    "l2": sbpre + ["l2op"] + sdvdr + spr + scntxt+ ["ret"],
+    "exbz": sbpre + ["extop"] + sdvdr + spr + meta + jira + gpt + scntxt+ ["ret"],
+    "l2": sbpre + ["l2op"] + sdvdr + spr + gpt + scntxt+ ["ret"],
     "l2n": sbpre + ["l2op"] + scntxt + ["ret"],
     "l1n": sbpre + ["l1op"] + scntxt + ["ret"],
-    "clst": sbpre + ["clstop"] + sdvdr + spr + scntxt + ["ret"],
-    "clsth" : sbpre + ["clstop"] + sdvdr + spr,
+    "clst": sbpre + ["clstop"] + sdvdr + spr + gpt + scntxt + ["ret"],
+    "clsth" : sbpre + ["clstop"] + sdvdr + spr + gpt,
     "clstn": sbpre + ["clstop"] + scntxt + ["ret"],
     "clsch": sbpre + ["clscop"],
     }
 
 scenarios_requiring_pr = ["cst", "ex", "exsaas", "exold", "exb", "excf", "exbz","l2", "clst", "clsth"]
+scenarios_requiring_esc = ["ex", "exsaas", "exb", "excf", "exbz"]
+scenarios_requiring_bzjira = ["exbz"]
+scenarios_requiring_cfjira = ["excf"]
 
 #Define the external team with scenarios
 scenario_ext = {"ex":"Internal", 
@@ -381,6 +474,10 @@ def main():
         if chosen_scenario in scenarios_requiring_pr:
             conversation = get_zd_messages()
             get_intuitPR(conversation,elements)
+            response = elements["intuitPR"]
+        if chosen_scenario in scenarios_requiring_esc:
+            conversation = get_zd_messages()
+            get_intuitEsc(conversation,response,elements)
         finalstring = pscenario(scenarios[chosen_scenario],product)
         finalstring = modifystring(finalstring,chosen_scenario,product)
         print(finalstring)

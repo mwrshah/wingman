@@ -43,6 +43,21 @@ def get_product(html_content,prod_dict):
 #    esc = ["ex", "exsaas", "exold", "exn", "exb", "exbn", "exbz", "excf"]
 #    no_esc = ["basic", "tsk", "l2n", "l1n", "clstn"] 
 
+def bylinestripper(string):
+    start_idx = string.find("Warm regards,")
+    if start_idx == -1:
+        start_idx = string.find("Best regards,")
+    if start_idx == -1:
+        start_idx = string.find("Regards,")
+    if start_idx == -1:
+        start_idx = string.find("Sincerely,")
+    if start_idx == -1:
+        start_idx = string.find("Kind regards,")
+    if start_idx != -1:
+        return string[:start_idx] #Also removes message history after byline
+    else:
+        return string
+
 def get_zd_messages(html_content):  
     zd_messages = []
     soup = BeautifulSoup(html_content, 'html.parser')
@@ -70,7 +85,8 @@ def get_zd_messages(html_content):
             comment_div = div.find('div', {'class': ['zd-comment','zd-comment zd-comment-pre-styled',class_chat,class_chat2]})
             comment_text = "No comment"
             if comment_div is not None:
-                comment_text = comment_div.text[:2000]
+                comment_text_pre = comment_div.text[:2000]
+                comment_text = bylinestripper(comment_text_pre)
             if comment_text != "No comment":
                 print(" "+sender_name + ": ") 
                 wrapped_comment = textwrap.fill(comment_text, 
@@ -113,7 +129,7 @@ def get_intuitPR(conversation,dictname,preseeded_context):
     if preseeded_context != "":
         information = preseeded_context
     else:
-        information = input("Provide context now:")
+        information = input("Clue:")
     completion = client.chat.completions.create(
       model="gpt-4-1106-preview",
       messages=[
@@ -136,19 +152,7 @@ def get_intuitPR(conversation,dictname,preseeded_context):
       ]
     )
     string = str(completion.choices[0].message.content)
-    start_idx = string.find("Warm regards,")
-    if start_idx == -1:
-        start_idx = string.find("Best regards,")
-    if start_idx == -1:
-        start_idx = string.find("Regards,")
-    if start_idx == -1:
-        start_idx = string.find("Sincerely,")
-    if start_idx == -1:
-        start_idx = string.find("Kind regards,")
-    if start_idx != -1:
-        string = string[:start_idx]
-    else:
-        string = string
+    string = bylinestripper(string) 
     dictname["intuitPR"] = string
     
 def get_intuitEsc(conversation,response,dictname):
@@ -215,10 +219,10 @@ products = {
     }
 
 
-# Define dict with JIRA links
+# Define dict with Jira links
 jira_links = {
     "vd": "https://workstation-df.atlassian.net/browse/ZTPS-30562",
-    "ev": "no JIRA",
+    "ev": "no Jira",
     "exinda": "https://trilogy-eng.atlassian.net/jira/software/c/projects/EXOS/issues",
     "ssmart": "https://trilogy-eng.atlassian.net/jira/software/c/projects/STREETSMART/issues",
     "ffm": "https://trilogy-eng.atlassian.net/jira/software/c/projects/STREETSMART/issues", #StreetSmart link for FFM
@@ -241,9 +245,9 @@ jira_links = {
     "acrm": "https://trilogy-eng.atlassian.net/jira/software/c/projects/CRM/issues",
     "tnk": "https://trilogy-eng.atlassian.net/jira/software/c/projects/KAYAKO/issues",
     "bz": "https://workstation-df.atlassian.net/jira/core/projects/IGBIZOPS/issues",
-    "sky": "no JIRA",
-    "sky5g": "no JIRA",
-    "l3" : "no JIRA",
+    "sky": "no Jira",
+    "sky5g": "no Jira",
+    "l3" : "no Jira",
     }
  
 
@@ -302,8 +306,8 @@ elements = {
     "sc2": "**Subject:**&nbsp;NA",
     "sc3": "**Description:**&nbsp;\n",
     "sc4": "**Attachments:**&nbsp; NA\n",
-    #Pieces of JIRA escalation
-#Insert JIRA link from jira_links dict
+    #Pieces of Jira escalation
+#Insert Jira link from jira_links dict
     "jirabiz": "[Jira link]",
     "prepesc1": "**Issue Type:** Task\n",
     "prepesc2": "**Subject:** &nbsp;NA\n",
@@ -370,7 +374,7 @@ scenarios = {
     "exb": sbpre + ["extop"] + ["buop"] + sdvdr + spr + meta + ["e2b"] + gpt +scntxt + ["blurbbu"]+ ["ret"], #Elevate to BU
     "excf": sbpre + ["extop"] + sdvdr + spr + meta + cjira + gpt + scntxt+ ["ret"], #Prep esc to CF
     "exbn": sbpre + ["extop"] + ["buop"] + scntxt + ["blurbbu", "e2b"], #Elevate to BU but no PR
-    "exbz": sbpre + ["extop"] + sdvdr + spr + meta + jira + gpt + scntxt+ ["ret"], #Prep esc to BU JIRA
+    "exbz": sbpre + ["extop"] + sdvdr + spr + meta + jira + gpt + scntxt+ ["ret"], #Prep esc to BU Jira
     "l2": sbpre + ["l2op"] + sdvdr + spr + gpt + scntxt+ ["ret"], #Send to L2
     "l2n": sbpre + ["l2op"] + scntxt + ["ret"], #Send to L2 but no PR
     "l1n": sbpre + ["l1op"] + scntxt + ["ret"], #Send to L1 but no PR
@@ -380,6 +384,15 @@ scenarios = {
     "qc": ["scrapedPR"],
     "sum": ["intuitPR"],
     }
+
+scenario_definitions = {"tsk": "Convert to task", "cst" :"Send to customer",
+                        "ex":"Prep esc via SC","exsaas":"Prep esc to Saas",
+                        "exold":"Customer Update while in escalation","exb":"Elevate to BU",
+                        "excf":"Prep esc to CF","exbz":"Prep esc to BU Jira",
+                        "l2":"Send to L2","clst":"Close ticket" ,"clsch":"Close chat",
+                        "qc":"Scrape PR","sum":"Summarize the conversation"
+                        }
+
 
 #Define the external team with scenarios
 scenario_ext = {"ex":"Internal", 
@@ -392,12 +405,12 @@ scenario_ext = {"ex":"Internal",
                 "exbn": "BU Customer Success/Sales/SOP"}
 
 scenario_reason = {"ex":"SC",
-                "exsaas":"SaaS Ops JIRA linked",
-                "exn":"CFIN JIRA",
-                "exold":"CFIN JIRA",
-                "exbz":"BU JIRA",
+                "exsaas":"SaaS Ops Jira linked",
+                "exn":"CFIN Jira",
+                "exold":"CFIN Jira",
+                "exbz":"BU Jira",
                 "exb":"Awaiting elevation",
-                "excf":"CFIN JIRA",
+                "excf":"CFIN Jira",
                 "exbn": "Awaiting elevation"}
 
 
@@ -428,15 +441,19 @@ scenarios_requiring_bzjira = ["exbz"]
 scenarios_requiring_cfjira = ["excf"]
 
 
-
 def main():
+    sep = " "+"-"*(terminal_width-2)
+    print(sep)
     html_content = pyperclip.paste()
     conversation = get_zd_messages(html_content)
-    print(".")
-    for name in scenarios:
-        print(name)
-    print("")
-    chosen_scenario = input("Pick:")
+    print_blurblist = []
+    for key,value in scenarios.items():
+        if str(key).endswith("n") is False:
+            print_blurblist.append(str(key) + " - " + scenario_definitions[key])
+    for text in print_blurblist:
+        print(text)
+    print(sep+"\nPick one:")
+    chosen_scenario = input()
     if chosen_scenario in ["","quit"]: 
         print("Goodbye!")
         sys.exit()
@@ -453,13 +470,31 @@ def main():
             get_intuitEsc(conversation,response,elements)
         finalstring = pscenario(scenarios[chosen_scenario],ticket_productcode)
         finalstring = modifystring(finalstring,chosen_scenario,ticket_productcode,ticket_prodname)
-        finalstring_wrapped = textwrap.fill(finalstring, 
-                                            width=available_width+3,
-                                            initial_indent="  ",
-                                            subsequent_indent="  ",
-                                            )
-        print("\n")
-        print(finalstring)
+        idx_link_end = finalstring.find("2jr)_\n")+len("2jr)_\n")+1
+        finalstring_sub = finalstring[idx_link_end:-2].replace("**","").replace("&nbsp;","")
+        finalstring_sub = finalstring_sub.replace("\n","[nl]")
+        fs_sub_paras = finalstring_sub.split("[nl][nl]")
+        fs_sub_paras_nlpreserve = []
+        fs_sub_paras_clean = []
+        for para in fs_sub_paras:
+            para = para.replace("[nl]","\n[rl]") #remaining single lines preserved as [rl]
+            split_paras = para.split("\n")
+            for splitpara in split_paras:
+                fs_sub_paras_nlpreserve.append(splitpara)
+        for para in fs_sub_paras_nlpreserve:
+            wrapped_para = textwrap.fill(para, 
+                                        width=terminal_width-2,
+                                        initial_indent=" ",
+                                        subsequent_indent=" ",
+                                    )
+            fs_sub_paras_clean.append(wrapped_para)
+        fs_sub_clean = "\n\n".join(fs_sub_paras_clean)
+        fs_sub_clean = fs_sub_clean.replace("\n [rl]"," ")
+        sep2 = u'\u2554'+u'\u2550'*(terminal_width-2)+u'\u2557'
+        sep3 = u'\u255A'+u'\u2550'*(terminal_width-2)+u'\u255D'
+        print(sep2)
+        print(fs_sub_clean)
+        print(sep3)
         pyperclip.copy(finalstring)
 
     else:
@@ -469,3 +504,9 @@ def main():
 
 main()
 
+#double_line_horizontal = u'\u2550' # '═'
+#double_line_vertical = u'\u2551' # '║'
+#top_left_corner = u'\u2554' # '╔'
+#top_right_corner = u'\u2557' # '╗'
+#bottom_left_corner = u'\u255A' # '╚'
+#bottom_right_corner = u'\u255D' # '╝'

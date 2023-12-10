@@ -114,7 +114,7 @@ except KeyError:
     pr_model = get_gpt_from_file("pr_model",dir_path,"gpt-4-1106-preview")
 
 #get the api key
-os.environ["OPENAI_API_KEY"]='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'
+os.environ["OPENAI_API_KEY"]='placeholder_api_key'
 
 #Global scope vars for printing
 terminal_width = shutil.get_terminal_size().columns

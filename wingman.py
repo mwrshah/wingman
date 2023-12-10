@@ -5,6 +5,7 @@ import pandas as pd
 import pyperclip
 from openai import OpenAI
 from bs4 import BeautifulSoup
+from bs4.element import NavigableString
 import textwrap
 import shutil
 import sys
@@ -131,12 +132,12 @@ def scenario_extractor(input_string):
             "l2": ["l2", "l2n"],
             "esc":["ex", "exsaas", "exold", "exn", "exb", "exbn", "exbz", "excf","l2","l1","l2n","l1n"],
             "yes_pr":["sum","ex", "cst","exsaas", "exold", "exb", "excf", "exbn", "exbz", "l2", "clst", "clsth"],
-            "no_pr":["qc", "tsk", "exn", "l2n", "l1n", "clstn","exbn"],
+            "no_pr":["qc", "tsk", "exn", "l2n", "l1n", "clstn","exbn" ],
             "qc":["qc"],
             "task":["tsk"], 
             "sum":["sum"],
             "cf":["excf"],
-            "sc":["ex"],
+            "sc":["ex", "exn"],
             "bz":["exbz"],
             "bu":["exb","exbn",],
             "chat":["clsch"],
@@ -205,12 +206,12 @@ def scenario_extractor(input_string):
         "l2" : ["l2", "level 2", "level two", "l2n"],
         "esc" : ["external", "escalate", "elevate", " ext ", "send this to","send it to", "send to"],
         "yes_pr" : ["a pr ","write", "draft", "compose", "yes pr"],
-        "no_pr" : ["no pr", "don't write", "no reply", "no response", "don't draft","don't draft"],
+        "no_pr" : ["no pr", "don't write", "no reply", "no response", "don't draft","don't draft", " exn ", " excfn ", " l2n ", " exbn ", "l1n", "clstn"],
         "qc" : ["quality", " qc ","check", " chk ", "chck", " qlt",  "review",],
         "task" : ["task", "tsk"],
         "sum" : ["summary", " sumr "," sumz ", " smz ", " smry ", " sm "],
         "cf" : ["to finance"," the finan", " fin ","cf ", "central finance", "treasury", " ap ", "collect cash", "udf", "accounts pay", " rishap", "cquery", "write off", "vendor reg", "vendor pay", "o2c", "record maint", "record mn", "record man", "record mg"],
-        "sc" : [" sc ","side conv", "side conversation", " ex ",],
+        "sc" : [" sc ","side conv", "side conversation", " ex ", " exn "],
         "bz" : ["bu jira", "business ops", " bz ", "bizops", "exbz"," account m","ount mng", " ount mg"],
         "bu" : ["elevate", "exbn", "noc ", " elvt ", " bu ", "exb"], 
         "chat": ["clsch"," chat ", " cht ",],
@@ -250,6 +251,7 @@ def scenario_extractor(input_string):
                         #pbug("           intent",intent)
                         searchterm = searchterm
                         found_intent = intent
+                        pbug("found_intent",found_intent)
                         existing_encapsulated_searchterm = False
                         for term, val in collected_intents_dict.items():
                             if encapsulated_check(searchterm, term):
@@ -396,6 +398,21 @@ def BUelevationsripper(string):
 
     else:
         return string
+
+def preserve_newlines(tag):
+    text_parts = []
+    for element in tag.descendants:
+        if element.parent.name == 'a':
+            continue
+        if isinstance(element, NavigableString):
+            text = str(element).replace('\n', '[newline]')
+            text_parts.append(text)
+        elif element.name == 'br':
+            text_parts.append('[newline]')
+        elif element.name == 'a':
+            text_parts.append(str(element))
+    return ''.join(text_parts).replace('[newline]', '\n')
+
 def get_zd_messages(html_content,f_pr):  
     zd_messages = []
     soup = BeautifulSoup(html_content, 'html.parser')
@@ -438,11 +455,15 @@ def get_zd_messages(html_content,f_pr):
     if first_commentorIN[:50] != f_pr[:50]:
         print("\n Making SURE to print first IN as it is different from the inclusion in messages \n")
         print_bright(" "+sender_name + ": ",whitef)
-        wrapped_comment = textwrap.fill(first_IN_pre, 
+        fed_IN = first_IN_pre.replace("\n\n","}n")
+        fed_IN = fed_IN.replace("\n","}n")
+        wrapped_comment = textwrap.fill(fed_IN, 
                                         width=available_width,                                        
                                         initial_indent=subindent,
                                         subsequent_indent=subindent,
                                         )
+        wrapped_comment = wrapped_comment.replace("!n","\n | ")
+        wrapped_comment = wrapped_comment.replace("}n","\n | ")
         print_bright(wrapped_comment+"\n",yellowf)
 
     for div in soup.find_all('div', {'class': ['sc-54nfmn-1 bthKwz','sc-1qvpxi4-1 lvXye','sc-i0djx2-0 fwLKxM',class_kandy2,class_chat,class_chat2]}):
@@ -471,15 +492,27 @@ def get_zd_messages(html_content,f_pr):
             comment_div = div.find('div', {'class': ['zd-comment','zd-comment zd-comment-pre-styled',class_chat,class_chat2]})
             comment_text = "No comment"
             if comment_div is not None:
-                comment_text_pre = comment_div.text[:2000]
+                comment_text_pre = preserve_newlines(comment_div)
+                comment_text_pre = comment_text_pre[:2000]
                 comment_text = bylinestripper(comment_text_pre)
             if comment_text != "No comment":
                 print_bright(" "+sender_name + ": ",whitef)
-                wrapped_comment = textwrap.fill(comment_text, 
+                fed_comment = comment_text.replace("\n\n","}n")
+                fed_comment = fed_comment.replace("\n","}n")
+               # print(fed_comment[:50])
+                split_fed = fed_comment.split("}n")
+                split_fed_print=[]
+                for sliver in split_fed:
+                    wrapped_comment = textwrap.fill(sliver, 
                                                 width=available_width,
                                                 initial_indent=subindent,
                                                 subsequent_indent=subindent,
                                                 )
+                    split_fed_print.append(wrapped_comment)
+                wrapped_comment = "\n".join(split_fed_print)
+                wrapped_comment = wrapped_comment.replace("!n","\n | ")
+                wrapped_comment = wrapped_comment.replace("}n","\n | ")
+                #print(repr(wrapped_comment[:50])) 
                 #if counter is an even number
                 if index == 1: 
                     print_bright(wrapped_comment,yellowf)

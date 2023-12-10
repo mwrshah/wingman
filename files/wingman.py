@@ -130,10 +130,12 @@ class_AI_integration = "sc-5rafq2-0 sc-7uf44v-0 gXPtvy"
 pr_classes = [class_kandy2,class_chat,class_chat2,class_AI_integration, "sc-11lm90w-0 dehgfD","sc-54nfmn-2 bLEhML"]
 
 
-#FLOW - define an intent in the following
-#1. Add it to the intent_sets dictionary
-#2. Add it to the scenario_subsets dictionary
-#3. Add it to the mapping_one_to_one dictionary or beneath it with a placeholder here.
+#FLOW and changes - define an intent in the following
+#1. Add search term and new intent to the intent_sets dictionary
+#2. Add search term to ancilliary intents that might apply such as bu_jira, saas, sc etc.
+#2. Add the scenario_subsets that apply to scenario_subsets dict
+#3. Add changes like mhteam and jirabiz to the mapping_one_to_one dictionary
+#4. Add jira with the intent_name?? WIP
 
 negations = ["ont", "not", "n't", "no", "minus", "excluding", "without"]
 
@@ -184,7 +186,7 @@ insertion = {
         "cf_wsf" : [" wsf "],
         "sc" : [ " sc ","side conv", "side conversation", " ex ",],
         "bz" : [" bz ", "business ops", "bizops ", "exbz",],
-        "bu_jira" : [ "ibueng", "itpef", "ztps", "business ops", " bz ", "bizops", "exbz",],
+        "bu_jira" : [ "ibueng", "ignite bu eng", "itpef", "ztps", "business ops", " bz ", "bizops", "exbz",],
         "bu_other" : [" bu ", "business unit", "biz u",],
         "jira_generic" : ["on jira", " jira ", " jra ", " jir ", " jirn ", " jiran",],
         "acc_mgt" : [" acc ", "account management", "account manager", " am ", " accm ", " accmg ", " accman ", " accmn ", " accmgt "],
@@ -219,9 +221,10 @@ insertion = {
         "in_esc_update" : [item for item in intent_sets["no_esc"]] + ["in escalation", "in esc ", "pending input",
                                                                       "waiting", "exold","pending on", "pending with", 
                                                                       "pending over", "update requester", "update cust" ],
-        "ibueng" : ["bu eng", "ibueng"],
+        "ibueng" : ["ignite bu eng", "ibueng"],
         "itpef" : ["feature req", "itpef"],
-        "ztps" : ["ztps", " ps jira", "professional services"],
+        "ztps" : ["ztps", " ps jira" ],
+        "itrel" : ["itrel"],
     }
 intent_sets.update(insertion)
 
@@ -275,6 +278,7 @@ scenario_subsets= {
             "ibueng"        :["exjira", "exjiran","exold","exoldn"],
             "itpef"         :["exjira", "exjiran","exold","exoldn"],
             "ztps"          :["exjira", "exjiran","exold","exoldn"],
+            "itrel"         :["exjira", "exjiran","exold","exoldn"],
     }
 
 
@@ -1206,14 +1210,11 @@ def dict_writer(orig_intent_list, global_intents_list, dict_to_update):
                 ("mhtimer","9999 &nbsp;"),
                 ("mhtarget","Engineering Defect &nbsp;"),
              ],
-        "categ_bz": [("mhteam","BU Customer Success/Sales/SOP"),
-                    ("jirabiz", "[Jira link]" + "(" + jira_links["bz"] + ")\n"),
-                    ],
+        "bz": [("mhteam","BU Customer Success/Sales/SOP"),
+                ("jirabiz", "[Jira link]" + "(" + jira_links["bz"] + ")\n"),
+                ],
+        "ibueng": [("mhteam","BU Other &nbsp;"),],
         "ztps": [("jirabiz", "[Jira link]" + "(" + jira_links["ztps"] + ")\n"),
-                 ("mhteam","BU Other &nbsp;"),
-                 ("mhreason","Linked ZTPS"),
-                 ("mhtimer","9999 &nbsp;"),
-                 ("mhtarget","Other &nbsp;\n"),
                  ],
         "cf_csquery": [("prepesc6","CSQuery\n")],
         "cf_wsf": [("prepesc6","WSF Payment\n")],

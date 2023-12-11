@@ -1,181 +1,87 @@
 ZD MESSAGES including FIRST IN: 
 
-	at com.microsoft.sqlserver.jdbc.SQLServerStatement.getNextResult(SQLServerStatement.java:
- Subject: An Internal error has occurred
-1632) ~[mssql-jdbc-8.4.1.jre8.jar:?]
-2023-12-07T20:31:59.571992167Z 	at com.microsoft.sqlserver.jdbc.SQLServerPreparedStatement.doExecutePreparedStatement(SQLServerPreparedStatement.java:602) ~[mssql-jdbc-8.4.1.jre8.jar:?]
-2023-12-07T20:31:59.571996567Z 	at com.microsoft.sqlserver.jdbc.SQLServerPreparedStatement$PrepStmtExecCmd.doExecute(SQLServerPreparedStatement.java:524) ~[mssql-jdbc-8.4.1.jre8.jar:?]
-2023-12-07T20:31:59.572001067Z 	at com.microsoft.sqlserver.jdbc.TDSCommand.execute(IOBuffer.java:7375) ~[mssql-jdbc-8.4.1.jre8.jar:?]
-2023-12-07T20:31:59.572005267Z 	at com.microsoft.sqlserver.jdbc.SQLServerConnection.executeCommand(SQLServerConnection.java:3206) ~[mssql-jdbc-8.4.1.jre8.jar:?]
-2023-12-07T20:31:59.572009667Z 	at com.microsoft.sqlserver.jdbc.SQLServerStatement.executeCommand(SQLServerStatement.java:247) ~[mssql-jdbc-8.4.1.jre8.jar:?]
-2023-12-07T20:31:59.572013767Z 	at com.microsoft.sqlserver.jdbc.SQLServerStatement.executeStatement(SQLServerStatement.java:222) ~[mssql-jdbc-8.4.1.jre8.jar:?]
-2023-12-07T20:31:59.572018167Z 	at com.microsoft.sqlserver.jdbc.SQLServerPreparedStatement.executeQuery(SQLServerPreparedStatement.java:446) ~[mssql-jdbc-8.4.1.jre8.jar:?]
-2023-12-07T20:31:59.572023167Z 	at com.zaxxer.hikari.pool.ProxyPreparedStatement.executeQuery(ProxyPreparedStatement.java:52) ~[HikariCP-3.4.5.jar:?]
-2023-12-07T20:31:59.572027667Z 	at com.zaxxer.hikari.pool.HikariProxyPreparedStatement.executeQuery(HikariProxyPr
-Dipak said: 
+Finlay said:
+ Subject: [CatchAll_support@citynumbers.co.uk] RE: [PROGRESS UPDATE] [4051124] | Rising costs | [CityNumbers Support]
+ 
  | 
 
 
-Adding 
+Hi,
 
  
+
+We have now migrated the numbers below out of City Numbers and no longer use the platform.
+
+ 
+
+Please can you confirm we will not be billed any more for these:
+
+ 
+
+0333 202 6441
+
+0333 202 6442
+
+ 
+
 
 ATLAS said: 
- | Dear Dipak,
+ | Dear Finlay,
 
-I understand that you're experiencing issues with your application when trying to establish a connection to the Azure SQL Database. I appreciate your patience and cooperation in this matter.
+We understand your request to confirm that you will no longer be billed for the numbers you've migrated out of City Numbers. Rest assured, we will review your account details and provide the necessary assistance.
 
-Based on the analysis of your log files, it seems that the issue might be due to a combination of a firewall configuration issue and a possible SQL syntax error. Here are some steps you can take to resolve the issue:
+Please note that we are committed to ensuring a smooth transition for you and will address your concerns promptly.
 
-1. Verify the Azure SQL Database firewall settings to ensure that your IP address is allowed to connect. If not, add a new firewall rule to permit your IP address.
-2. Use the provided ClientConnectionId to search for more detailed error messages or logs within the Azure SQL server for further diagnostics.
-3. Ensure that the Java options set in `JAVA_OPTS` are appropriate for your application's requirements and the available system resources.
-4. Check your application's configuration, specifically the database connection settings, to ensure that they are correct and match the expected values for the Azure SQL server.
-5. After making changes to the firewall settings, monitor the application logs for successful connections and perform thorough testing to confirm that the issue is resolved.
-6. Examine the SQL query that is causing the error. Look for any syntax issues such as missing or misplaced parentheses, incorrect SQL keywords, or other syntax errors.
-7. If the new UX instance is using an existing database, ensure that there have been no changes to the database schema that could affect the query execution.
-8. If the application code has been modified recently, review the changes to ensure that the SQL query has not been altered in a way that introduces syntax errors.
-9. Run the problematic SQL query directly against the database using a SQL client tool to see if the error can be reproduced outside of the application context.
-10. Since Hibernate is being used, ensure that the mappings and configurations are correct and that Hibernate is generating the
-Dipak said: 
- | 
-Please check latest logs, we are not handling the code and SQL query.
-
-We are trying to spin the UI instance only
-Dipak said: 
- | 
-The same SQL and Continer working with primary UX , I'm trying to configure secondary UX
-Dipak said: 
- | 
-Is there any update on this ticket
-ATLAS said: 
- | Dear Dipak,
-
-I understand that you are experiencing issues while trying to configure a secondary UX instance with the same SQL and container that is working with the primary UX. I assure you that we are thoroughly reviewing the latest logs you have provided.
-
-Given that you are not handling the code and SQL query, and the same SQL and container are functioning with the primary UX, it seems the issue might be specific to the configuration of the secondary UX instance. 
-
-Please ensure that the configuration settings for the secondary UX instance match those of the primary UX instance. This includes checking the database connection settings, Java options set in `JAVA_OPTS`, and any other configuration parameters that may differ between the two instances.
-
-If the issue persists after verifying these settings, it would be helpful to have more information about the specific error messages or logs you are seeing when trying to spin up the secondary UX instance. This will help us in providing a more accurate diagnosis and solution.
-
-Lukas said: 
- | Dear Dipak,
+Amir said: 
+ | Dear Finlay,
  
-We have routed this to the Development team for review and will update this ticket once we have their feedback.
+Thank you for contacting the CityNumbers Support Team. We understand your request to confirm that you will no longer be billed for the numbers you've migrated out of City Numbers.
  
-Dipak said: 
+Kindly note that these numbers are not yet exported and thus are still being billed. We will now follow up with the carrier to know the status and the export date will be the final billing date. We will get back to you as soon as we have more information from the carrier.
+ 
+Finlay said: 
  | 
-Adding latest logs
-Dipak said: 
- | ERROR org.springframework.messaging.MessageHandlingException: nested exception is org.hibernate.NonUniqueResultException: query did not return a unique result: 2, failedMessage=GenericMessage [payload=com.teamhub.managers.award.builtin.AwardRunnerStore$$Lambda$1174/0x00000008017d1040@65a5237b, headers={SITE_UUID=05783ac3-d80d-48ac-9e54-aba4c5c62fc3, id=ce57614a-faa4-129c-830b-31d785d43980, timestamp=1702081207993}]
-ATLAS said: 
- | Dear Dipak,
 
-We appreciate you providing the latest logs and the specific error message you are encountering. The details you've shared are crucial in helping us understand the issue better.
 
-The error message indicates a NonUniqueResultException, which typically occurs when a query that is expected to return one result returns multiple results instead. This could be related to the configuration of your secondary UX instance.
+Hi, 
 
-Our team will continue to analyze the information you've provided. We will work diligently to identify the root cause of the issue and guide you through the necessary steps to resolve it.
-
-Sami said: 
- | Dear Dipak,
  
-Thank you for the latest update. We have forwarded the information to the Development team and will notify you via this ticket once we have their feedback.
+
+I don’t understand as this number is valid in RingCentral and I have control of how and where to point it in there.
+
+
  
-Dipak said: 
- | 
-I understand the error message, it will be great if you can help me get which configuration needs to be corrected.
-ATLAS said: 
- | Dear Dipak,
 
-We acknowledge your understanding of the error message and your request for further assistance. It's important to us that we help you identify the configuration that needs correction.
+The official switch over was on 14/11/2023 as per the attached emails from RingCentral confirming this.
 
-Our team is currently analyzing the details you've provided. We are committed to identifying the root cause of the issue and guiding you through the necessary steps to resolve it.
 
-Rest assured, we will continue to provide the necessary support until your issue is resolved.
+ 
 
+
+Rishi said: 
+ | Dear Finlay,
+ 
+Thanks for following up on this request and for providing additional information. 
+ 
+We're still waiting for confirmation from our carrier as shared earlier. We'll update our records and share an update with you as soon as we receive confirmation. 
+ 
+Thank you for your patience. 
+ 
 
 
 
 
 
 first_IN FOUND: 
-Dipak said: 
- | We are trying to spin new instance of UX with same database and container. 
-We are getting following errors, attached log file as well
+Finlay said: 
+ | 
+
+Hi,
  
-2023-12-07T20:31:59.571980068Z Caused by: com.microsoft.sqlserver.jdbc.SQLServerException: Incorrect syntax near ')'.
-2023-12-07T20:31:59.571983868Z 	at com.microsoft.sqlserver.jdbc.SQLServerException.makeFromDatabaseError(SQLServerException.java:262) ~[mssql-jdbc-8.4.1.jre8.jar:?]
-2023-12-07T20:31:59.571987967Z 	at com.microsoft.sqlserver.jdbc.SQLServerStatement.getNextResult(SQLServerStatement.java:1632) ~[mssql-jdbc-8.4.1.jre8.jar:?]
-2023-12-07T20:31:59.571992167Z 	at com.microsoft.sqlserver.jdbc.SQLServerPreparedStatement.doExecutePreparedStatement(SQLServerPreparedStatement.java:602) ~[mssql-jdbc-8.4.1.jre8.jar:?]
-2023-12-07T20:31:59.571996567Z 	at com.microsoft.sqlserver.jdbc.SQLServerPreparedStatement$PrepStmtExecCmd.doExecute(SQLServerPreparedStatement.java:524) ~[mssql-jdbc-8.4.1.jre8.jar:?]
-2023-12-07T20:31:59.572001067Z 	at com.microsoft.sqlserver.jdbc.TDSCommand.execute(IOBuffer.java:7375) ~[mssql-jdbc-8.4.1.jre8.jar:?]
-2023-12-07T20:31:59.572005267Z 	at com.microsoft.sqlserver.jdbc.SQLServerConnection.executeCommand(SQLServerConnection.java:3206) ~[mssql-jdbc-8.4.1.jre8.jar:?]
-2023-12-07T20:31:59.572009667Z 	at com.microsoft.sqlserver.jdbc.SQLServerStatement.executeCommand(SQLServerStatement.java:247) ~[mssql-jdbc-8.4.1.jre8.jar:?]
-2023-12-07T20:31:59.572013767Z 	at com.microsoft.sqlserver.jdbc.SQLServerStatement.executeStatement(SQLServerStatement.java:222) ~[mssql-jdbc-8.4.1.jre8.jar:?]
-2023-12-07T20:31:59.572018167Z 	at com.microsoft.sqlserver.jdbc.SQLServerPreparedStatement.executeQuery(SQLServerPreparedStatement.java:446) ~[mssql-jdbc-8.4.1.jre8.jar:?]
-2023-12-07T20:31:59.572023167Z 	at com.zaxxer.hikari.pool.ProxyPreparedStatement.executeQuery(ProxyPreparedStatement.java:52) ~[HikariCP-3.4.5.jar:?]
-2023-12-07T20:31:59.572027667Z 	at com.zaxxer.hikari.pool.HikariProxyPreparedStatement.executeQuery(HikariProxyPreparedStatement.java) ~[HikariCP-3.4.5.jar:?]
-2023-12-07T20:31:59.572035166Z 	at org.hibernate.engine.jdbc.internal.ResultSetReturnImpl.extract(ResultSetReturnImpl.java:60) ~[hibernate-core-5.2.18.Final.jar:5.2.18.Final]
-2023-12-07T20:31:59.572039666Z 	at org.hibernate.loader.Loader.getResultSet(Loader.java:2168) ~[hibernate-core-5.2.18.Final.jar:5.2.18.Final]
-2023-12-07T20:31:59.572043866Z 	at org.hibernate.loader.Loader.executeQueryStatement(Loader.java:1931) ~[hibernate-core-5.2.18.Final.jar:5.2.18.Final]
-2023-12-07T20:31:59.572048066Z 	at org.hibernate.loader.Loader.executeQueryStatement(Loader.java:1893) ~[hibernate-core-5.2.18.Final.jar:5.2.18.Final]
-2023-12-07T20:31:59.572052166Z 	at org.hibernate.loader.Loader.doQuery(Loader.java:938) ~[hibernate-core-5.2.18.Final.jar:5.2.18.Final]
-2023-12-07T20:31:59.572056466Z 	at org.hibernate.loader.Loader.doQueryAndInitializeNonLazyCollections(Loader.java:341) ~[hibernate-core-5.2.18.Final.jar:5.2.18.Final]
-2023-12-07T20:31:59.572060766Z 	at org.hibernate.loader.Loader.doList(Loader.java:2692) ~[hibernate-core-5.2.18.Final.jar:5.2.18.Final]
-2023-12-07T20:31:59.572064966Z 	at org.hibernate.loader.Loader.doList(Loader.java:2675) ~[hibernate-core-5.2.18.Final.jar:5.2.18.Final]
-2023-12-07T20:31:59.572069366Z 	at org.hibernate.loader.Loader.listIgnoreQueryCache(Loader.java:2507) ~[hibernate-core-5.2.18.Final.jar:5.2.18.Final]
-2023-12-07T20:31:59.572073766Z 	at org.hibernate.loader.Loader.list(Loader.java:2502) ~[hibernate-core-5.2.18.Final.jar:5.2.18.Final]
-2023-12-07T20:31:59.572077865Z 	at org.hibernate.loader.hql.QueryLoader.list(QueryLoader.java:502) ~[hibernate-core-5.2.18.Final.jar:5.2.18.Final]
-2023-12-07T20:31:59.572082065Z 	at org.hibernate.hql.internal.ast.QueryTranslatorImpl.list(QueryTranslatorImpl.java:392) ~[hibernate-core-5.2.18.Final.jar:5.2.18.Final]
-2023-12-07T20:31:59.572086465Z 	at org.hibernate.engine.query.spi.HQLQueryPlan.performList(HQLQueryPlan.java:216) ~[hibernate-core-5.2.18.Final.jar:5.2.18.Final]
-2023-12-07T20:31:59.572090765Z 	at org.hibernate.internal.SessionImpl.list(SessionImpl.java:1490) ~[hibernate-core-5.2.18.Final.jar:5.2.18.Final]
-2023-12-07T20:31:59.572095165Z 	at org.hibernate.query.internal.AbstractProducedQuery.doList(AbstractProducedQuery.java:1445) ~[hibernate-core-5.2.18.Final.jar:5.2.18.Final]
-2023-12-07T20:31:59.572099365Z 	at org.hibernate.query.internal.AbstractProducedQuery.list(AbstractProducedQuery.java:1414) ~[hibernate-core-5.2.18.Final.jar:5.2.18.Final]
-2023-12-07T20:31:59.572103865Z 	at org.hibernate.query.Query.getResultList(Query.java:146) ~[hibernate-core-5.2.18.Final.jar:5.2.18.Final]
-2023-12-07T20:31:59.572108165Z 	at com.teamhub.dao.user.impl.TopContributorDaoImpl.getCommunityLeadersByTime(TopContributorDaoImpl.java:88) ~[core-2.37.0-GA.jar:?]
-2023-12-07T20:31:59.572112665Z 	at com.teamhub.managers.user.impl.TopContributorManagerImpl.lambda$getMapByActionReputation$5(TopContributorManagerImpl.java:224) ~[core-2.37.0-GA.jar:?]
-2023-12-07T20:31:59.572116965Z 	at java.util.Spliterators$ArraySpliterator.forEachRemaining(Spliterators.java:948) ~[?:?]
-2023-12-07T20:31:59.572120964Z 	at java.util.stream.ReferencePipeline$Head.forEach(ReferencePipeline.java:658) ~[?:?]
-2023-12-07T20:31:59.572128964Z 	at com.teamhub.managers.user.impl.TopContributorManagerImpl.getMapByActionReputation(TopContributorManagerImpl.java:221) ~[core-2.37.0-GA.jar:?]
-2023-12-07T20:31:59.572133164Z 	at com.teamhub.managers.user.impl.TopContributorManagerImpl.updateCommunityLeaders(TopContributorManagerImpl.java:148) ~[core-2.37.0-GA.jar:?]
-2023-12-07T20:31:59.572137564Z 	at com.teamhub.managers.user.impl.TopContributorManagerImpl.updateAll(TopContributorManagerImpl.java:102) ~[core-2.37.0-GA.jar:?]
-2023-12-07T20:31:59.572142064Z 	at com.teamhub.managers.user.impl.TopContributorManagerImpl$$FastClassBySpringCGLIB$$ba9df2d7.invoke(<generated>) ~[core-2.37.0-GA.jar:?]
-2023-12-07T20:31:59.572146464Z 	at org.springframework.cglib.proxy.MethodProxy.invoke(MethodProxy.java:218) ~[spring-core-5.2.20.RELEASE.jar:5.2.20.RELEASE]
-2023-12-07T20:31:59.572150764Z 	at org.springframework.aop.framework.CglibAopProxy$CglibMethodInvocation.invokeJoinpoint(CglibAopProxy.java:783) ~[spring-aop-5.2.20.RELEASE.jar:5.2.20.RELEASE]
-2023-12-07T20:31:59.572155264Z 	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:163) ~[spring-aop-5.2.20.RELEASE.jar:5.2.20.RELEASE]
-2023-12-07T20:31:59.572159664Z 	at org.springframework.aop.framework.CglibAopProxy$CglibMethodInvocation.proceed(CglibAopProxy.java:753) ~[spring-aop-5.2.20.RELEASE.jar:5.2.20.RELEASE]
-2023-12-07T20:31:59.572164263Z 	at org.springframework.transaction.interceptor.TransactionAspectSupport.invokeWithinTransaction(TransactionAspectSupport.java:367) ~[spring-tx-5.2.20.RELEASE.jar:5.2.20.RELEASE]
-2023-12-07T20:31:59.572168563Z 	at org.springframework.transaction.interceptor.TransactionInterceptor.invoke(TransactionInterceptor.java:118) ~[spring-tx-5.2.20.RELEASE.jar:5.2.20.RELEASE]
-2023-12-07T20:31:59.572172963Z 	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:186) ~[spring-aop-5.2.20.RELEASE.jar:5.2.20.RELEASE]
-2023-12-07T20:31:59.572177263Z 	at org.springframework.aop.framework.CglibAopProxy$CglibMethodInvocation.proceed(CglibAopProxy.java:753) ~[spring-aop-5.2.20.RELEASE.jar:5.2.20.RELEASE]
-2023-12-07T20:31:59.572181863Z 	at org.springframework.aop.framework.CglibAopProxy$DynamicAdvisedInterceptor.intercept(CglibAopProxy.java:698) ~[spring-aop-5.2.20.RELEASE.jar:5.2.20.RELEASE]
-2023-12-07T20:31:59.572186063Z 	at com.teamhub.managers.user.impl.TopContributorManagerImpl$$EnhancerBySpringCGLIB$$b277ce0c.updateAll(<generated>) ~[core-2.37.0-GA.jar:?]
-2023-12-07T20:31:59.572190363Z 	at com.teamhub.managers.user.impl.TopContributorManagerImpl$$FastClassBySpringCGLIB$$ba9df2d7.invoke(<generated>) ~[core-2.37.0-GA.jar:?]
-2023-12-07T20:31:59.572194563Z 	at org.springframework.cglib.proxy.MethodProxy.invoke(MethodProxy.java:218) ~[spring-core-5.2.20.RELEASE.jar:5.2.20.RELEASE]
-2023-12-07T20:31:59.572198863Z 	at org.springframework.aop.framework.CglibAopProxy$CglibMethodInvocation.invokeJoinpoint(CglibAopProxy.java:783) ~[spring-aop-5.2.20.RELEASE.jar:5.2.20.RELEASE]
-2023-12-07T20:31:59.572203263Z 	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:163) ~[spring-aop-5.2.20.RELEASE.jar:5.2.20.RELEASE]
-2023-12-07T20:31:59.572210562Z 	at org.springframework.aop.framework.CglibAopProxy$CglibMethodInvocation.proceed(CglibAopProxy.java:753) ~[spring-aop-5.2.20.RELEASE.jar:5.2.20.RELEASE]
-2023-12-07T20:31:59.572215262Z 	at org.springframework.aop.support.DelegatingIntroductionInterceptor.doProceed(DelegatingIntroductionInterceptor.java:136) ~[spring-aop-5.2.20.RELEASE.jar:5.2.20.RELEASE]
-2023-12-07T20:31:59.572219762Z 	at org.springframework.aop.support.DelegatingIntroductionInterceptor.invoke(DelegatingIntroductionInterceptor.java:124) ~[spring-aop-5.2.20.RELEASE.jar:5.2.20.RELEASE]
-2023-12-07T20:31:59.572224162Z 	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:186) ~[spring-aop-5.2.20.RELEASE.jar:5.2.20.RELEASE]
-2023-12-07T20:31:59.572228862Z 	at org.springframework.aop.framework.CglibAopProxy$CglibMethodInvocation.proceed(CglibAopProxy.java:753) ~[spring-aop-5.2.20.RELEASE.jar:5.2.20.RELEASE]
-2023-12-07T20:31:59.572233162Z 	at org.springframework.aop.framework.CglibAopProxy$DynamicAdvisedInterceptor.intercept(CglibAopProxy.java:698) ~[spring-aop-5.2.20.RELEASE.jar:5.2.20.RELEASE]
-2023-12-07T20:31:59.572237562Z 	at com.teamhub.managers.user.impl.TopContributorManagerImpl$$EnhancerBySpringCGLIB$$f47710b.updateAll(<generated>) ~[core-2.37.0-GA.jar:?]
-2023-12-07T20:31:59.572242062Z 	at com.teamhub.infrastructure.jobs.TopContributorsJob.run(TopContributorsJob.java:60) ~[core-2.37.0-GA.jar:?]
-2023-12-07T20:31:59.572246062Z 	at com.teamhub.integration.worker.background.BackgroundTaskHandler$1$1.call(BackgroundTaskHandler.java:107) ~[core-2.37.0-GA.jar:?]
-2023-12-07T20:31:59.572250562Z 	at com.teamhub.integration.worker.background.BackgroundTaskHandler$BackgroundTaskWrapper.call(BackgroundTaskHandler.java:167) ~[core-2.37.0-GA.jar:?]
-2023-12-07T20:31:59.572255061Z 	at com.teamhub.infrastructure.hibernate.SessionFactoryWrapper.runOnNetworkInternal(SessionFactoryWrapper.java:144) ~[core-2.37.0-GA.jar:?]
-2023-12-07T20:31:59.572259361Z 	at com.teamhub.infrastructure.hibernate.SessionFactoryWrapper.runOnNetwork(SessionFactoryWrapper.java:103) ~[core-2.37.0-GA.jar:?]
-2023-12-07T20:31:59.572263661Z 	at com.teamhub.infrastructure.hibernate.SessionFactoryWrapper.runOnNetwork(SessionFactoryWrapper.java:99) ~[core-2.37.0-GA.jar:?]
-2023-12-07T20:31:59.572267961Z 	at com.teamhub.integration.worker.background.BackgroundTaskHandler.handle(BackgroundTaskHandler.java:87) ~[core-2.37.0-GA.jar:?]
-2023-12-07T20:31:59.572272061Z 	at com.teamhub.integration.worker.background.BackgroundTaskHandler$1.call(BackgroundTaskHandler.java:103) ~[core-2.37.0-GA.jar:?]
-2023-12-07T20:31:59.572276261Z 	at com.teamhub.infrastructure.hibernate.SessionFactoryWrapper.runOnNetworkInternal(SessionFactoryWrapper.java:144) ~[core-2.37.0-GA.jar:?]
-2023-12-07T20:31:59.572280561Z 	at com.teamhub.infrastructure.hibernate.SessionFactoryWrapper.runOnNetwork(SessionFactoryWrapper.java:103) ~[core-2.37.0-GA.jar:?]
-2023-12-07T20:31:59.572285561Z 	at com.teamhub.infrastructure.hibernate.SessionFactoryWrapper.runOnNetwork(SessionFactoryWrapper.java:99) ~[core-2.37.0-GA.jar:?]
-2023-12-07T20:31:59.572290161Z 	at com.teamhub.integration.worker.background.BackgroundTaskHandler.forSite(BackgroundTaskHandler.java:95) ~[core-2.37.0-GA.jar:?]
-2023-12-07T20:31:59.572299760Z 	at com.teamhub.infrastructure.jobs.TopContributorsJob.executeInternal(TopContributorsJob.java:48) ~[core-2.37.0-GA.jar:?]
-2023-12-07T20:31:59.572304260Z 	at org.springframework.scheduling.quartz.QuartzJobBean.execute(QuartzJobBean.java:75) ~[spring-context-support-5.2.20.RELEASE.jar:5.2.20.RELEASE]
-2023-12-07T20:31:59.572308660Z 	at org.quartz.core.JobRunShell.run(JobRunShell.java:202) ~[quartz-2.2.3.jar:?]
-2023-12-07T20:31:59.572312860Z 	... 1 more
+We have now migrated the numbers below out of City Numbers and no longer use the platform.
+ 
+Please can you confirm we will not be billed any more for these:
+ 
+0333 202 6441
+0333 202 6442
+ 

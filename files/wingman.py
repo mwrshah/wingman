@@ -98,7 +98,6 @@ try:
         esc_model = "gpt-4-1106-preview"
     elif "gpt-4" in pr_model_value:  
         esc_model = "gpt-4"
-    print(esc_model)
 except KeyError:
     esc_model = get_gpt_from_file("esc_model",dir_path,"gpt-4-1106-preview")
 
@@ -109,12 +108,58 @@ try:
         pr_model = "gpt-4-1106-preview"
     elif "gpt-4" in pr_model_value:
         pr_model = "gpt-4"
-    print(pr_model)
 except KeyError:
     pr_model = get_gpt_from_file("pr_model",dir_path,"gpt-4-1106-preview")
 
+
+#Fileload products and their jira links from json files
+
+try:
+    with open(os.path.join(dir_path, 'products_to_jiras.json'),'r') as f:
+        products_to_jiras = json.load(f)
+except json.JSONDecodeError:
+    print("The products_to_jiras.json file is corrupted or invalid.")
+except FileNotFoundError:
+    print("The products_to_jiras.json file is missing.")
+except Exception as e:
+    print("An error occured while loading the products_to_jiras.json file.")
+    print(e)
+
+try:
+    with open(os.path.join(dir_path, 'saas_jira_links.json'),'r') as f:
+        saas_jira_links = json.load(f)
+except json.JSONDecodeError:
+    print("The saas_jira_links.json file is corrupted or invalid.")
+except FileNotFoundError:
+    print("The saas_jira_links.json file is missing.")
+except Exception as e:
+    print("An error occured while loading the jira_links.json file.")
+    print(e)
+
+
+try:
+    with open(os.path.join(dir_path, 'bu_jira_links.json'),'r') as f:
+        bu_jira_links = json.load(f)
+except json.JSONDecodeError:
+    print("The bu_jira_links.json file is corrupted or invalid.")
+except FileNotFoundError:
+    print("The bu_jira_links.json file is missing.")
+except Exception as e:
+    print("An error occured while loading the jira_links.json file.")
+    print(e)
+
 #get the api key
-os.environ["OPENAI_API_KEY"]='placeholder_api_key'
+try:
+    with open(os.path.join(dir_path, 'hidden_key.txt'),'r') as f:
+        api_key = f.read().strip()
+except FileNotFoundError:
+    print("The hidden_key.txt file is missing.")
+except Exception as e:
+    print("An error occured while loading the hidden_key.txt file.")
+    print(e)
+
+os.environ["OPENAI_API_KEY"]= api_key
+
 
 #Global scope vars for printing
 terminal_width = shutil.get_terminal_size().columns
@@ -141,6 +186,21 @@ negations = ["ont", "not", "n't", "no", "minus", "excluding", "without"]
 
 intent_sets = {}
 insertion = {}
+
+#Loading Jira keys to intent_sets as a separate intent
+staging_list_saas = [] #for_load_to_scenario_subsets
+for key, value in saas_jira_links.items():
+    insertion[key] = [" " + key.lower() + " "]
+    staging_list_saas.append(key) 
+
+staging_list_bu = [] #for_load_to_scenario_subsets
+for key, value in bu_jira_links.items():
+    insertion[key] = [" " + key.lower() + " "]
+    staging_list_bu.append(key)
+intent_sets.update(insertion)
+
+
+
 insertion = {
         "restart" : [" refresh ~"," restart ~", " redo ~", " re ~" ], #if entire value is this is implied by starting space and the ending char ~
         "quit" : ["quit ~", "exit ~"," qiut ~", "qitu ~", "guti ~", "exti ~" ],
@@ -171,7 +231,7 @@ intent_sets["no_pr"] += [x+" "+ y.strip() for x in negations for y in intent_set
 insertion = {
         "sum" : ["summarize", " summ", " smrz ", " sumri ",  " smri",  "summary", " sumr "," sumz ", " smz ", " smry " ],
         "vp" : [" vp "],
-        "cf" : ["to finance"," the finan", " fin ","cf ", "central finance", "treasury", " ap ", "collect cash", "udf", "accounts pay", " rishap", "cquery", "write off", "vendor reg", "vendor pay", "o2c", "record maint", "record mn", "record man", "record mg"],
+        "cf" : [" credit memo ", " cfin ", "to finance"," the finan", " fin ","cf ", "central finance", "treasury", " ap ", "collect cash", "udf", "accounts pay", " rishap", "cquery", "write off", "vendor reg", "vendor pay", "o2c", "record maint", "record mn", "record man", "record mg"],
         "cf_csquery" : ["csquery", "rishap"], 
         "cf_udf" : [" udf "],
         "cf_ap" : [" ap ", "accounts pay"],
@@ -186,8 +246,7 @@ insertion = {
         "cf_wsf" : [" wsf "],
         "sc" : [ " sc ","side conv", "side conversation", " ex ",],
         "bz" : [" bz ", "business ops", "bizops ", "exbz",],
-        "bu_jira" : [ "ibueng", "ignite bu eng", "itpef", "ztps", "business ops", " bz ", "bizops", "exbz",],
-        "bu_other" : [" bu ", "business unit", "biz u",],
+        "bu_jira" : [ " bu jira ", "ibueng", "ignite bu eng", "itpef", "ztps", "business ops", " bz ", "bizops", "exbz",],
         "jira_generic" : ["on jira", " jira ", " jra ", " jir ", " jirn ", " jiran",],
         "acc_mgt" : [" acc ", "account management", "account manager", " am ", " accm ", " accmg ", " accman ", " accmn ", " accmgt "],
         "eng" : [" eng ", "engineer", "engineering", "exeng", "exengn"],
@@ -199,6 +258,8 @@ insertion = {
         }
 intent_sets.update(insertion)
 
+intent_sets["bu_jira"] += [x+" "+ "jira" for x in intent_sets["bu"]]
+intent_sets["bu_jira"] += [x+" "+ "via jira" for x in intent_sets["bu"]]
 
 intent_sets["force_elevate"] = [x+" "+ y.strip() for x in negations for y in intent_sets["force_esc"]]
 
@@ -227,6 +288,12 @@ insertion = {
         "itrel" : ["itrel"],
     }
 intent_sets.update(insertion)
+# Load jira keys to saas and bu jira scenarios
+for item in staging_list_saas:
+    intent_sets["saas"] += [" " + item.lower() + " "]
+for item in staging_list_bu:
+    if item not in ["CFIN"]:
+        intent_sets["bu_jira"] += [" " + item.lower() + " "]
 
 
 half_list = ["l1", "cst", "exsc", "exold", "ex", "exjira", "exeng", "exb", "l2", "clst", "clsch", "sum"] 
@@ -262,7 +329,6 @@ scenario_subsets= {
             "sc"            :["exsc", "exscn","exold","exoldn"],
             "bz"            :["exjira", "exjiran","exold","exoldn"],
             "bu_jira"       :["exjira", "exjiran","exold","exoldn"],
-            "bu_other"      :["exjira", "exjiran","exold","exoldn","exsc", "exscn"],
             "jira_generic"  :["exjira", "exjiran","exold","exoldn"],
             "acc_mgt"       :["exsc", "exscn","exjira", "exjiran","exold","exoldn"],
             "eng"           :["exeng", "exengn","exold","exoldn"],
@@ -281,14 +347,16 @@ scenario_subsets= {
             "itrel"         :["exjira", "exjiran","exold","exoldn"],
     }
 
+#Load jira keys to scenario_subsets
+for item in staging_list_saas+staging_list_bu:
+    scenario_subsets[item] = ["exjira", "exjiran","exold","exoldn"]
+
 
 #Smallcheck
-scenario_subsets_keys = list(scenario_subsets.keys())
-intent_sets_keys = list(intent_sets.keys())
+scenario_subsets_keys = set(scenario_subsets.keys())
+intent_sets_keys = set(intent_sets.keys())
 if scenario_subsets_keys != intent_sets_keys:
-    scenario_subsets_keys_set = set(scenario_subsets_keys)
-    intent_sets_keys_set = set(intent_sets_keys)
-    diff1 = list(scenario_subsets_keys_set - intent_sets_keys_set)
+    diff1 = list(scenario_subsets_keys - intent_sets_keys)
     diff2 = list(intent_sets_keys_set - scenario_subsets_keys_set)
     diff = diff1 + diff2
     print(repr(diff))
@@ -410,7 +478,7 @@ def get_ticket_number(ticket_soup):
         ticketnumber = str(ticket_soup.get("data-entity-id"))
     return ticketnumber
 
-def get_product(soup,prod_dict):
+def get_product(soup):
         all_labels = soup.find_all('label',{'class':'sc-anv20o-4 iIWDoF StyledLabel-sc-2utmsz-0 bYrRLL'})
         prod_name = "**[ProdSearchExcept](https://none)**"
         for label in all_labels:
@@ -418,13 +486,7 @@ def get_product(soup,prod_dict):
                 prod_name = label.find_next('div', {'class': 'StyledEllipsis-sc-1u4uqmy-0 gxcmGf'}).text
                 prod_name = prod_name.strip()
                 break
-        for key, value in prod_dict.items():
-            if value == prod_name:
-                productcode = key
-                break 
-            else:
-                productcode = "error"
-        return productcode, prod_name
+        return prod_name
 
 def scenario_extractor(instruction_string):
     
@@ -440,7 +502,7 @@ def scenario_extractor(instruction_string):
     parse_string_full = input_string.lower()
     parse_string = parse_string_full[:300]
     last_dot_idx = parse_string.rfind(".")
-    if last_dot_idx != -1:
+    if last_dot_idx != -1: #skip the last dot
         parse_string = parse_string[:last_dot_idx] + " " + parse_string[last_dot_idx+1:]
     parse_string = parse_string.strip()
     #pbug("parse_string",parse_string) #debug
@@ -461,10 +523,10 @@ def scenario_extractor(instruction_string):
 
 
     slice1 = parse_string[:end_idx1]
+     
     slice1 = " " + slice1 + " " #some of the search terms are defined with leading spaces so this is necessary for search term starting at the beginning of the sentence. The benefit of having space in the search term is it won't fire for term appearing within a word. Example " sc "
     slice1 = slice1.replace("`", " `")
-    
-    
+   #slice one gets passed on 
     
 
     def negation_check(string):
@@ -481,7 +543,8 @@ def scenario_extractor(instruction_string):
     encapsulated_terms = []
     #Small check on inclusion of one search term in another
     def encapsulated_check(term1, term2):
-        if term1 in term2 and len(term1.strip()) < len(term2.strip()):
+        if term1 in term2 and len(term1) < len(term2):
+            #print(f"Warning: {term1} is encapsulated in {term2}.")
             return True
         else:
             return False
@@ -542,8 +605,9 @@ def scenario_extractor(instruction_string):
     intent_popper(unique_intents, "sum",["chat"])
     intent_popper(unique_intents, "sc", ["saas","jira_generic","bu_jira"])
     intent_popper(unique_intents, "in_esc_update", ["esc"])
+    intent_popper(unique_intents, "bu_jira", ["bu","force_elevate"])
     intent_popper(unique_intents, "force_esc", ["force_elevate", "no_esc", "bu"])
-    intent_popper(unique_intents, "force_elevate", ["esc", "in_esc_update", "bu_other"])
+    intent_popper(unique_intents, "force_elevate", ["esc", "in_esc_update"])
     
     cf_gen_overrides =( "cf_csquery", "cf_udf", "cf_ap", "cf_writeoff", "cf_vendorreg", "cf_vendorpay", 
                        "cf_o2c", "cf_tax", "cf_treasury", "cf_wsf")
@@ -551,6 +615,7 @@ def scenario_extractor(instruction_string):
         intent_popper(unique_intents, scenario,["cf_generic"])
 
     intent_popper(unique_intents, "cf", ["force_esc", "force_elevate"])
+    
 
 
     unique_intents_list = list(unique_intents) #List for passthrought
@@ -634,25 +699,34 @@ Try being more specific."
 
     wrapped_flowbreak1 = term_print_string(flowbreak1,"   ")
     wrapped_flowbreak2 = term_print_string(flowbreak2,"   ")
-    
     if len(lookuplist) == 0:
         print_bright(wrapped_flowbreak2,greenf)     
         print(extrainfo)
         print(f"{yellowf}Possibilities list: {resetf} " + f"{bredf}{str(lookuplist)}{resetf}")
     elif len(lookuplist) > 1:
-        lookuplist = [scenario for scenario in lookuplist if not scenario.endswith("n")]
-        if len(lookuplist) > 1:
-            print_bright(wrapped_flowbreak1,greenf)
-            print(extrainfo)
-            print(f"{yellowf}Possibilities list: {resetf} " + f"{bredf}{str(lookuplist)}{resetf}")
-        elif len(lookuplist) < 1:
-            print_bright(wrapped_flowbreak1+"\n\n ERROR:no_pr sets present in tandem",greenf)
-            print(extrainfo)
-            print(f"{yellowf}Possibilities list: {resetf} " + f"{bredf}{str(lookuplist)}{resetf}")
+        #EXTREME TAPE - to make it default to sc if no intersection found
+        if set(lookuplist) == set(["exjiran","exscn"]):
+            lookuplist = ["exscn"]
+        elif set(lookuplist) == set(["exjira","exsc"]):
+            lookuplist = ["exsc"]
+        else:
+            old_lookuplist = lookuplist.copy()
+            lookuplist = [scenario for scenario in lookuplist if not scenario.endswith("n")]
+            if len(lookuplist) > 1:
+                print_bright(wrapped_flowbreak1,greenf)
+                print(extrainfo)
+                print(f"{yellowf}Possibilities list: {resetf} " + f"{bredf}{str(lookuplist)}{resetf}")
+            elif len(lookuplist) < 1:
+                print_bright(wrapped_flowbreak1+"\n\n ERROR:no_pr sets present in tandem",greenf)
+                print(extrainfo)
+                print(f"{yellowf}Possibilities list: {resetf} " + f"{bredf}{str(old_lookuplist)}{resetf}")
+
     if len(lookuplist) > 1:
         return None, None #TAPE - took out clue as an output for 2step
+
     elif len(lookuplist) == 0:
         return None, None #TAPE - took out clue as an output for 2step
+
     elif len(lookuplist) == 1:
         form_choice = lookuplist[0] 
         scenarioinfo_label = "Form:"
@@ -1004,29 +1078,7 @@ def get_intuitEsc(model_input,conversation,response,dictname,clue,pr_promptsys,p
     return subj_string, desc_string
 
 
-#Load products and their jira links from json files
 
-try:
-    with open(os.path.join(dir_path, 'products.json'),'r') as f:
-        products = json.load(f)
-except json.JSONDecodeError:
-    print("The products.json file is corrupted or invalid.")
-except FileNotFoundError:
-    print("The products.json file is missing.")
-except Exception as e:
-    print("An error occured while loading the products.json file.")
-    print(e)
-
-try:
-    with open(os.path.join(dir_path, 'jira_links.json'),'r') as f:
-        jira_links = json.load(f)
-except json.JSONDecodeError:
-    print("The jira_links.json file is corrupted or invalid.")
-except FileNotFoundError:
-    print("The jira_links.json file is missing.")
-except Exception as e:
-    print("An error occured while loading the jira_links.json file.")
-    print(e)
 
 #Define the individual pieces format that can be re-mixed in scenarios
 elements = {
@@ -1211,10 +1263,10 @@ def dict_writer(orig_intent_list, global_intents_list, dict_to_update):
                 ("mhtarget","Engineering Defect &nbsp;"),
              ],
         "bz": [("mhteam","BU Customer Success/Sales/SOP"),
-                ("jirabiz", "[Jira link]" + "(" + jira_links["bz"] + ")\n"),
+                ("jirabiz", "[Jira link]" + "(" + bu_jira_links["IGBIZOPS"] + ")\n"),
                 ],
         "ibueng": [("mhteam","BU Other &nbsp;"),],
-        "ztps": [("jirabiz", "[Jira link]" + "(" + jira_links["ztps"] + ")\n"),
+        "ztps": [("jirabiz", "[Jira link]" + "(" + bu_jira_links["ZTPS"] + ")\n"),
                  ],
         "cf_csquery": [("prepesc6","CSQuery\n")],
         "cf_wsf": [("prepesc6","WSF Payment\n")],
@@ -1232,11 +1284,6 @@ def dict_writer(orig_intent_list, global_intents_list, dict_to_update):
                             ("mhtimer","9999 &nbsp;"),
                             ("mhtarget","Other &nbsp;\n"),
                          ],
-        "bu_other": [("mhteam","BU Other &nbsp;"),
-                        ("mhreason","[Jira or SC](https://none)"),
-                        ("mhtimer","[Enter](https://none) &nbsp;"),
-                        ("mhtarget","Other &nbsp;\n"),
-                    ],
         "bu": [ ("mhteam","BU Other &nbsp;"),
                 ("mhreason","Awaiting elevation"),
                 ("mhtimer","4 &nbsp;"),
@@ -1247,7 +1294,7 @@ def dict_writer(orig_intent_list, global_intents_list, dict_to_update):
                         ("mhtimer","9999 &nbsp;"),
                         ("mhtarget","Central Finance &nbsp;\n"),
                         ("prepesc1","Task\n"),
-                        ("jirabiz", "[Jira link]" + "(" + jira_links["cf"] + ")\n"),
+                        ("jirabiz", "[Jira link]" + "(" + bu_jira_links["CFIN"] + ")\n"),
                     ],
         "categ_saas": [ ("mhteam","Saas Ops &nbsp;"),
                         ("mhreason","Linked JIRA"),
@@ -1325,11 +1372,43 @@ def remix_elements(orig_form,dict_of_elements):
     return "\n".join(vallist)
 
 
-def link_updater(productcode,dict_of_elements):
-    if productcode in jira_links:
-        dict_of_elements["jirabiz"] = "[Jira link]" + "(" + jira_links[productcode] + ")"
-    else:
-        dict_of_elements["jirabiz"] = "**[Jira not found](https://none)**"
+def link_updater(productname,intent_list,dict_of_elements):
+    bu_jira_populated = False
+    saas_jira_populated = False
+    for key, value in bu_jira_links.items():
+        if any(intent == key for intent in intent_list):
+            matching_intent = next((intent for intent in intent_list if intent == key), None)
+            dict_of_elements["jirabiz"] = "[Jira link]" + "(" + bu_jira_links[matching_intent] + ")"
+            bu_jira_populated = True
+            break
+    if not bu_jira_populated:
+        for key, value in saas_jira_links.items():
+            if any(intent == key for intent in intent_list):
+                matching_intent = next((intent for intent in intent_list if intent == key), None)
+                dict_of_elements["jirabiz"] = "[Jira link]" + "(" + saas_jira_links[matching_intent] + ")"
+                saas_jira_populated = True
+                break
+    
+    if not saas_jira_populated and not bu_jira_populated:
+        flag=None
+        if "bu_jira" in intent_list:
+            flag="bu"
+        elif "saas" in intent_list:
+            flag="saas"
+        elif "cf" in intent_list:
+            flag="cf"
+        else:
+            flag=None
+            
+        if productname in products_to_jiras:
+            if flag in ["bu","cf"]:
+                dict_of_elements["jirabiz"] = "[Jira link]" + "(" + products_to_jiras[productname][1] + ")"
+            elif flag=="saas":
+                dict_of_elements["jirabiz"] = "[Jira link]" + "(" + products_to_jiras[productname][0] + ")"
+            else:
+                dict_of_elements["jirabiz"] = "[Jira link]" + "(" + products_to_jiras[productname][0] + ") **Defaulting to SaaS Jira**"
+        else: 
+            dict_of_elements["jirabiz"] = "**[Jira not found](https://none)**"
     return dict_of_elements
 
 
@@ -1354,7 +1433,7 @@ def list_popper(orig_intent_list, orig_list_to_pop): # func modifies list
     return list_to_pop
 
 
-def modify_string(string, scenario,productcode,prodname):
+def modify_string(string, scenario,prodname):
     string = string.replace("X Support Team", prodname + " Support Team")
     string = string.replace("<variable>", prodname)
     string = string.replace("\n* Elevate to BU", "* Elevate to BU")
@@ -1565,7 +1644,7 @@ def main():
     while not chosen_scenario:
         user_input = input(" ")
         if user_input == "":
-            user_input = " re "
+            user_input = " re ~"
         chosen_scenario, intentions_list  = scenario_extractor(user_input) #TAPE - part of the effort to make it 2step removed clue/information from output of this func:
          
     if chosen_scenario in ["restart"]: 
@@ -1602,15 +1681,10 @@ def main():
         
         processing_info_string = term_print_string("Processing...", " ")
         print_bright(processing_info_string, magf)
-        ticket_productcode = ""
         ticket_prodname = ""
-        ticket_productcode, ticket_prodname = get_product(soup,products)
+        ticket_prodname = get_product(soup)
         ticket_number = "" 
         ticket_number = get_ticket_number(ticket_soup)
-        
-        if not ticket_productcode:
-            ticket_productcode = "error"
-
         preseeded_context = ""
         response = ""
 
@@ -1646,7 +1720,7 @@ def main():
                 elements["prepesc3"] += desc_string 
 
         #Write non AI stuff to dict
-        elements = link_updater(ticket_productcode,elements) #func using dict
+        elements = link_updater(ticket_prodname,intentions_list,elements) #func using dict
         elements["prepesc4"] += ticket_number+"\n"
         dict_writer(intentions_list, global_intents_list,elements) # func using dict
       
@@ -1656,7 +1730,7 @@ def main():
         #Stringing
         finalstring = ""
         finalstring = remix_elements(used_form,elements) # func using dict
-        finalstring = modify_string(finalstring,chosen_scenario,ticket_productcode,ticket_prodname)
+        finalstring = modify_string(finalstring,chosen_scenario,ticket_prodname)
        
         #Term output
         ds_printer(finalstring)

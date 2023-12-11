@@ -1,0 +1,129 @@
+flowchart TD    
+    A[Start]-->B(Import Libraries)
+    B-->C(Get file paths)
+    C-->D(Get API key)
+    D-->F(Get terminal width)    
+    F-->G(Define PR Classes)
+    G-->H(Define negation words)
+    H-->I["`**Define intent sets**
+    intent: search terms list associated with intent
+    _Note: shorthand with
+    leading and trailing spaces_ `"]
+    I-->J{insertions}
+    J--> I 
+    I-->L[Define basic scenarios/forms]
+    L-->M["`Additional NO PR 
+    scenarios/forms`"]
+    M-->L 
+    L-->|filter|N[scenario subsets]
+    L-->|hand-write|N
+    I-->|#SmallCheck ensures 1:1|N
+    I-->|keys|O[Global intent list]
+    A-->P[FUNCTIONS]
+    A-->PA[PRINTING FUNCTIONS]
+    P-->Z
+    A-->PB[OpenAI fuctions]
+    subgraph FUNCTIONS
+        direction BT 
+        Q(print_bright)
+        R(term_print_string)
+        S(print_wrapped)
+        T(print_logo)
+        U(clear_terminal)
+        V(preserve_newlines)
+        W(first_pr_extractor)
+        X(get_ticket_number)
+        Y(get_product)
+        PA---Q
+        Q---R
+        R---S
+        S---T
+        P-->U 
+        U---V 
+        V---W 
+        W---X 
+        x---Y
+        P-->u[byline_stripper]
+        PA-->v[DS_printer]
+        v-->w[Jira link stripper]
+        w-->x[BU elevation stripper]
+        u---y[get_zd_messages]
+        y---ua[get_name_from_file]
+        ua---ub[get_gpt_model]
+        PB---z[get_intuitPR]
+        z---aa[get_intuitEsc]
+        aa---ab[get_intuitIssue]
+    end
+   
+    Z["`IMP: 
+    scenario_extract 
+    from instruction`"]
+    
+    Z-->a["`ini empty 
+    Collected Intents`"]
+    Z-->|limit 300|b[parse instruction add a space at the end]
+    b-->|find period|c["`add a space before it
+     and skip the period`"]
+    d["`intent extractor step1
+    For each search term try 
+    a .find on the string`"]
+
+    e["`intent extractor step2 
+    negation check
+    `"]
+    
+    c-->|parse string|d 
+    I-->g(term1)
+    I-->h(term2)
+    I-->i(term3...)
+    g-->d 
+    h-->d 
+    i-->d 
+    d-->|"`slice 15chr to the left
+    expand the white space to 
+    check only trailing word`"|e
+    e-->f{"`encapsulation check
+    searchterm vs existing hits`"}
+    f-->|pass|a 
+    f-->|fail|j[discard]
+    a-->|check existing hits|f 
+    a-->k[Set of Unique Intents]
+    k-->l["`Overrides
+    no_pr -> yes_pr
+    no_esc -> esc
+    saas -> generic jira
+    saas -> bu_jira
+    summary -> chat
+    sc -> generic jira
+    sc -> bu_jira
+    sc -> saas
+    `"]
+    l-->m["`More Overrides
+    in_esc_update -> esc
+    force_esc -> force_elevate
+    force_esc -> no_esc
+    force_esc -> bu elevation
+    force_elevate -> esc
+    force_elevate -> in_esc_update
+    force_elevate -> bu_other metadata
+    sc -> saas
+    `"]
+    m-->k 
+    k-->n
+    N-->|Get associated forms|n[Populate form possibilities]
+    n-->na{"`Any scenario intended with 
+    only single possible outcome?`"}
+    na-->|yes| nb[Selected]
+    na-->|no| nc[Continue]
+    nc-->|Venn Intersection|o["`Intersection scenario/s 
+    present in all intents`"]
+    o --> p{Single Survivor?}
+    p -->|Yes|nb(Proceed)
+    p -->|No|r(find the scenario set with fewest)
+    r-->|eliminate endswith'n'|s{Single Survivor?}
+    s-->|Yes|nb 
+    s-->|No|t(Error-Back to input)
+    
+
+
+

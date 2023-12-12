@@ -1471,7 +1471,7 @@ scenarios_requiring_esc = [item for item in full_list if item.startswith("e") an
 
 
 def main():
-    #clear_terminal() # debug
+    clear_terminal() #debug
     #Global scope vars for printing
     terminal_width = shutil.get_terminal_size().columns
     chrt = "|" #· ⋮

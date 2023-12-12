@@ -12,9 +12,46 @@ import json
 import platform #Used for clear only
 import time
 import configparser
+#WIN import winreg as reg
 
 
-#javascript:(function() { var htmlContent = document.documentElement.outerHTML; navigator.clipboard.writeText(htmlContent); })();
+#import difflib
+#
+#def capture_globals():
+#    """
+#    Capture the current state of global variables.
+#    It filters out built-in modules and variables for clarity.
+#    """
+#    global_vars = globals().copy()
+#    return {k: v for k, v in global_vars.items() if not k.startswith('__') and not hasattr(v, '__call__')}
+#
+#def serialize_snapshot(snapshot):
+#    """
+#    Serialize the snapshot to a JSON string.
+#    Replace non-serializable values with a placeholder.
+#    """
+#    def default(o):
+#        return f"<<non-serializable: {type(o).__name__}>>"
+#    return json.dumps(snapshot, default=default, sort_keys=True, indent=4)
+#
+#def compare_snapshots(snapshot1, snapshot2):
+#    """
+#    Compare two snapshots using difflib and print the differences.
+#    """
+#    diff = difflib.unified_diff(
+#        snapshot1.splitlines(keepends=True),
+#        snapshot2.splitlines(keepends=True),
+#        fromfile='snapshot1', tofile='snapshot2', lineterm=''
+#    )
+#    for line in diff:
+#        print(line)
+#
+#def log_globals():
+#    with open('globals_log.txt', 'a') as file:
+#        for name, value in globals().items():
+#            if not name.startswith('__'):
+#                file.write(f'{name} = {value}\n')
+#
 
 # ANSI escape codes for bright colors
 bluef = "\033[94;1m"
@@ -29,48 +66,25 @@ whitef = "\033[97;1m"
 bredf = "\033[91m"
 resetf = "\033[0m" 
 
-#Find the path where the script is running 
-# to default to config bundled with the executable
-def get_resource_path():
-    try:
-        base_path = sys._MEIPASS
-    except Exception:
-        print("Error: Could not find the resource path in sys._MEIPASS.")
-        base_path = os.path.abspath(".")
-    return base_path
+#javascript:(function() { var htmlContent = document.documentElement.outerHTML; navigator.clipboard.writeText(htmlContent); })();
 
-#Get the files from the users documents directory
-home_path = os.path.expanduser("~")
-set_dir_path = os.path.join(home_path, "Documents", "wingman","appdata")
-fallback_path = os.path.join(get_resource_path(),"appdata")
+def get_install_path():
+    try:
+        registry_key = reg.OpenKey(reg.HKEY_CURRENT_USER, "Software\\Trilogy\\Wingman", 0, reg.KEY_READ)
+        install_path = reg.QueryValueEx(registry_key, "InstallPath")[0]
+        reg.CloseKey(registry_key)
+        return install_path
+    except WindowsError:
+        return None
 
 dir_path = None
+#WIN dir_path = get_install_path()
 if not dir_path:
-#python script defined path - non executable
-    try:
-        file_path = os.path.abspath(__file__)
-        wingman_dir_path = os.path.dirname(file_path)
-        dir_path = os.path.join(wingman_dir_path,"appdata")
-        print("dir_path intuited from python script dir")
-#windows executable - defined path in runbook to place config
-    except Exception:
-        try:
-            dir_path = set_dir_path
-            print("dir_path is set to ~/Documents/wingman/appdata")
-#fallback to bundled appdata
-        except Exception:
-            try:
-                dir_path = fallback_path
-            except Exception:
-                print("Error: Could not find the resource path in sys._MEIPASS.")
-                dir_path = os.path.abspath(".")
+    file_path = os.path.abspath(__file__)
+    dir_path = os.path.dirname(file_path)
 
 config = configparser.ConfigParser()
-try:
-    config.read(os.path.join(dir_path, 'config.ini'))
-except Exception as e:
-    print("Error: Could not read the config.ini file.")
-    print(e)
+config.read(os.path.join(dir_path, 'config.ini'))
 #get the agent name
 try:
     agent_name = config['User']['name']
@@ -983,10 +997,10 @@ def get_zd_messages(soup,f_pr):
     found_colon = zd_messages_str.find(":")
     if found_colon != -1:
         zd_messages_str = zd_messages_str[:found_colon+1] + "\n" + subj + "\n" + zd_messages_str[found_colon+1:]
-#    with open(f"{dir_path}/logs/log_last_zd_messages.txt", "w") as f:
-#        f.write("ZD MESSAGES including FIRST IN: \n\n" + zd_messages_str)
-#    with open(f"{dir_path}/logs/log_last_zd_messages.txt", "a") as f:
-#        f.write("\n\n\n\n\n\nfirst_IN FOUND: \n" + first_IN)
+    with open(f"{dir_path}/logs/log_last_zd_messages.txt", "w") as f:
+        f.write("ZD MESSAGES including FIRST IN: \n\n" + zd_messages_str)
+    with open(f"{dir_path}/logs/log_last_zd_messages.txt", "a") as f:
+        f.write("\n\n\n\n\n\nfirst_IN FOUND: \n" + first_IN)
     return zd_messages_str
 
 
@@ -1471,13 +1485,6 @@ scenarios_requiring_esc = [item for item in full_list if item.startswith("e") an
 
 
 def main():
-    clear_terminal() #debug
-    #Global scope vars for printing
-    terminal_width = shutil.get_terminal_size().columns
-    chrt = "|" #· ⋮
-    subindent = " "+chrt+" "
-    available_width = terminal_width - len(subindent)
-
     #Get the main dict in pure form
     elements_orig = {
         "instlink": "_[Instructions](https://docs.google.com/document/d/1w6pg-Lqz1Y5n8Gah7JXTRAnNEgnLGDgQn0p4EE_DdyU/edit#bookmark=id.bazq9xp2u2jr)_\n",
@@ -1588,6 +1595,7 @@ def main():
     -no byline
 """
     #Print the logo
+    clear_terminal()
     sep = " "+"-"*(terminal_width-2)
     print(sep)
     print_logo()
@@ -1754,52 +1762,3 @@ while True:
 
 
 
-#def get_install_path():
-#    try:
-#        registry_key = reg.OpenKey(reg.HKEY_CURRENT_USER, "Software\\Trilogy\\Wingman", 0, reg.KEY_READ)
-#        install_path = reg.QueryValueEx(registry_key, "InstallPath")[0]
-#        reg.CloseKey(registry_key)
-#        return install_path
-#    except WindowsError:
-#        return None
-
-
-#import difflib
-#
-#def capture_globals():
-#    """
-#    Capture the current state of global variables.
-#    It filters out built-in modules and variables for clarity.
-#    """
-#    global_vars = globals().copy()
-#    return {k: v for k, v in global_vars.items() if not k.startswith('__') and not hasattr(v, '__call__')}
-#
-#def serialize_snapshot(snapshot):
-#    """
-#    Serialize the snapshot to a JSON string.
-#    Replace non-serializable values with a placeholder.
-#    """
-#    def default(o):
-#        return f"<<non-serializable: {type(o).__name__}>>"
-#    return json.dumps(snapshot, default=default, sort_keys=True, indent=4)
-#
-#def compare_snapshots(snapshot1, snapshot2):
-#    """
-#    Compare two snapshots using difflib and print the differences.
-#    """
-#    diff = difflib.unified_diff(
-#        snapshot1.splitlines(keepends=True),
-#        snapshot2.splitlines(keepends=True),
-#        fromfile='snapshot1', tofile='snapshot2', lineterm=''
-#    )
-#    for line in diff:
-#        print(line)
-#
-#def log_globals():
-#    with open('globals_log.txt', 'a') as file:
-#        for name, value in globals().items():
-#            if not name.startswith('__'):
-#                file.write(f'{name} = {value}\n')
-#
-#WIN dir_path = get_install_path()
-#WIN import winreg as reg

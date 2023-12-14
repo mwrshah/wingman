@@ -402,7 +402,7 @@ def print_logo():
         print_bright(line.center(terminal_width-2),whitef)
         count += 1
 
-    print_bright(textwrap.fill("Wingman v0.6",
+    print_bright(textwrap.fill("Wingman v0.7beta",
                                terminal_width-10)
                                 .rjust(terminal_width-4),whitef)
 def clear_terminal():

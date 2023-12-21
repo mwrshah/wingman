@@ -946,11 +946,12 @@ def get_zd_messages(soup,f_pr):
                                                     subsequent_indent=subindent,
                                                     )
                     split_fed_print_list.append(wrapped_comment) 
-                if split_fed_print_list:
+                if len(split_fed_print_list) > 0:
                     if split_fed_print_list[0] == "":
                         split_fed_print_list.pop(0)
-                    if split_fed_print_list[-1] == "":
-                        split_fed_print_list.pop(-1)
+                    if len(split_fed_print_list) > 0:
+                        if split_fed_print_list[-1] == "":
+                            split_fed_print_list.pop(-1)
                 wrapped_comment = "\n".join(split_fed_print_list)
                 wrapped_comment = wrapped_comment.replace("\n\n\n","\n "+chrt+" \n")
                 wrapped_comment = wrapped_comment.replace("\n\n","\n "+chrt+" \n")

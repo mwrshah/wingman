@@ -744,6 +744,7 @@ def append_identities(list_of_messages,names):
     combined_list = [f"{label}:\n {message} \n-------\n" for label,message in mod_n_and_m]
     return combined_list 
 
+
 def get_intuitSummary(list_of_messages):
     if len(list_of_messages) > 10:
         short_list = list_of_messages[:4] + list_of_messages[-6:]
@@ -771,19 +772,22 @@ def get_intuitSummary(list_of_messages):
     issue_string = string 
     actions_string = ""
     now_string = ""
-    summary_flag = False
+    idx_len = 0
     issue_idx = string.find("Issue:")
+    idx_len = len("Issue:")
     if issue_idx == -1:
         issue_idx = string.find("Summary:")
         if issue_idx != -1:
-            summary_flag = True
+            idx_len = len("Summary:") 
+    if issue_idx == -1:
+        issue_idx = string.find("Request:")
+        if issue_idx != -1:
+            idx_len = len("Request:")
     actions_idx = string.find("Actions taken:")
     now_idx = string.find("Now:")
 
-    if issue_idx != -1 and actions_idx != -1 and not summary_flag:
-        issue_string = string[issue_idx+len("Issue:"):actions_idx]
-    if issue_idx != -1 and actions_idx != -1 and summary_flag:
-        issue_string = string[issue_idx+len("Summary:"):actions_idx]
+    if issue_idx != -1 and actions_idx != -1:
+        issue_string = string[(issue_idx+idx_len):actions_idx]
     if actions_idx != -1 and now_idx != -1:
         actions_string = string[actions_idx+len("Actions taken:"):now_idx]
     if now_idx != -1:
@@ -791,24 +795,15 @@ def get_intuitSummary(list_of_messages):
     list_output = [issue_string, actions_string, now_string]
     return list_output
 
-def get_intuitPR(model_input,conversation,preseeded_context,seededclue,pr_promptsys,pr_prompt1,pr_prompt2):
+def get_intuitPR(model_input,conversation,seededclue,prompt_sys,pr_prompt):
     client = OpenAI()
-    if preseeded_context != "":
-        clue = preseeded_context
-    else:
-        clue = seededclue
-#gpt-4-1106-preview
-    #print("Processing clue: " + clue[:40])
-    #print("Processing conversation: " + conversation[:40])
-    #print("Processing preseeded_context: " + preseeded_context[:40])
-    #print("Processing pr_prompt1: " + pr_prompt1[:40])
-    #print("Processing pr_promptsys: " + pr_promptsys[:40])
+    clue = seededclue
     completion = client.chat.completions.create(
         model=model_input,
         temperature=0.8,  
         messages=[
-        {"role": "system", "content": pr_promptsys},
-        {"role": "user", "content": pr_prompt1 },
+        {"role": "system", "content": prompt_sys},
+        {"role": "user", "content": pr_prompt },
         {"role": "assistant", "content": "Ok. Provide the conversation and the suggested_reply."},
         {"role": "user", "content": "Conversation:\n" + conversation},
         {"role": "assistant", "content": "Ok. Provide the suggested_reply."},
@@ -819,7 +814,7 @@ def get_intuitPR(model_input,conversation,preseeded_context,seededclue,pr_prompt
     string = bylinestripper(string) 
     return string
 
-def get_intuitIssue(model_input,conversation,response,pr_promptsys):
+def get_intuitIssue(model_input,conversation,response,prompt_sys):
     client = OpenAI()
     subject = client.chat.completions.create(
             model=model_input,
@@ -834,16 +829,16 @@ def get_intuitIssue(model_input,conversation,response,pr_promptsys):
 
 
 #Its not nice that dict is getting written to directly for the prepesc2 key. TAPE
-def get_intuitEsc(model_input,conversation,response,dictname,clue,pr_promptsys,pr_prompt1,pr_prompt2,pr_prompt3):
+def get_intuitEsc(model_input,conversation,response,dictname,clue,prompt_sys,pr_prompt,esc_prompt):
     client = OpenAI()
     subject = client.chat.completions.create(
             model=model_input,
             temperature=0.8,
             messages=[
-                {"role":"system","content": pr_promptsys +"Sometimes have to reach out to the finance and other teams within the company, to ask them for information, or help"},
-                {"role":"user","content": pr_prompt1 + "Conversation with format '[Person Name] said':\n" + conversation + "Clue:\n" + clue},
+                {"role":"system","content": prompt_sys +"Sometimes have to reach out to the finance and other teams within the company, to ask them for information, or help"},
+                {"role":"user","content": pr_prompt + "Conversation with format '[Person Name] said':\n" + conversation + "Clue:\n" + clue},
                 {"role":"assistant","content":response},
-                {"role":"user", "content": pr_prompt3}, 
+                {"role":"user", "content": esc_prompt}, 
                 ]
             )
     string = str(subject.choices[0].message.content)
@@ -1265,8 +1260,6 @@ for key, sequence in forms.items():
 forms.update(temp_dict)
 
 
-scenarios_with_preseed = {"sum": "write to the customer after the chat conversation you just had with them. summarize the conversation skipping the less important back and forth and focusing mostly on the request and outcome."}
-
 half_list = ["l1", "cst", "exsc", "exold", "ex", "exjira", "exeng", "exb", "l2", "clst", "clsch", "sum"] 
 full_list = half_list + [item+"n" for item in half_list]
 
@@ -1364,9 +1357,9 @@ def main():
     for key in elements:
         elements[key] = elements_orig[key]
 
-    pr_promptsys = "You are a customer support agent trained in responding to customers. Customers or internal requesters that reach out via email are either facing a technical issue or looking to get a request processed, and actioned."
+    prompt_sys = "You are a customer support agent trained in responding to customers. Customers or internal requesters that reach out via email are either facing a technical issue or looking to get a request processed, and actioned."
 
-    pr_prompt1 = f"""Write a brief response to the last message from the customer in the conversation provided to you. Your response should be based off the suggested_reply I provide which is what I want to tell the customer after having worked on this ticket. \n Rules and style guide:
+    pr_prompt = f"""Write a brief response to the last message from the customer in the conversation provided to you. Your response should be based off the suggested_reply I provide which is what I want to tell the customer after having worked on this ticket. \n Rules and style guide:
         -If replying to the first message from the requestor i.e. if there are no existing replies from the support team,the first line should be: "Thank you for contacting <product> Support team. I understand ...
         -Stick to the information provided.
         -Don't be obsequious.
@@ -1377,11 +1370,18 @@ def main():
         -Use a salutation like "Dear [First Name]"
         """
 
-        
-         
-    pr_prompt2 = "Please rewrite the response basing it mostly on the clue provided earlier. If the clue indicates additional actions have happened after the Conversation, take those into consideration."
+    sum_prompt = f""""write to the customer after the chat conversation you just had with them and provide a summary of the conversation skipping the less important back and forth and focusing mostly on the request and outcome.\n Rules and style guide:
+        -Begin with 'Dear [First_Name], \nThank you for contacting <product> Support Team about...'
+        -Don't overly empathise, but be polite.
+        -Don't be obsequious.
+        -Use active voice if appropriate.
+        -Use direct action oriented language.
+        -Don't repeat yourself too much
+        -Write in a concise manner.
+        -Use a salutation like "Dear [First Name]"
+"""
 
-    pr_prompt3 = """Ok. Now considering the clues in the suggested_reply, and also the conversation and response sent already to the customer, write to the team as relevant being mindful that:
+    esc_prompt = """Ok. Now considering the clues in the suggested_reply, and also the conversation and response sent already to the customer, write to the team as relevant being mindful that:
     -you should be concise
     -state the problem and what needs to be done; don't exhort too much
     -you should be precise
@@ -1448,7 +1448,8 @@ def main():
                                     "11 - Send to L2 - with a PR\n"
                                     "12 - Elevate to BU - with a PR\n"
                                     "13 - Summarize chat\n"
-                                    "14 - Close chat - no PR\n"
+                                    "14 - Close chat - no PR\n\n"
+                                    "Press Enter to reload."
                                  )
     wrapped_instruction = term_print_string(main_scenario_instruction, " ")
     print("\n")
@@ -1504,19 +1505,17 @@ def main():
         ticket_prodname = get_product(soup)
         ticket_number = "" 
         ticket_number = get_ticket_number(ticket_soup)
-        preseeded_context = ""
         response = ""
 
         if chosen_scenario in scenarios_requiring_pr: #debug
-            if chosen_scenario in scenarios_with_preseed:
-                preseeded_context = scenarios_with_preseed[chosen_scenario]
-                information = ""
-            else: 
-                preseeded_context = ""
+            if chosen_scenario in ["sum"]:
+                prompt_to_use = sum_prompt
+                information = "N/A"
+            else:
+                prompt_to_use = pr_prompt
             #Insert product in PR PRomtp sys
-            pr_prompt1 = pr_prompt1.replace("<product>", ticket_prodname,1)
-            
-            response = get_intuitPR(pr_model,conversation,preseeded_context,information,pr_promptsys,pr_prompt1,pr_prompt2)
+            prompt_to_use = prompt_to_use.replace("<product>", ticket_prodname,1)
+            response = get_intuitPR(pr_model,conversation,information,prompt_sys,prompt_to_use)
             elements["intuitPR"] = response
 
         subjstring = "" 
@@ -1524,14 +1523,14 @@ def main():
         issuestring = ""
 
         if chosen_scenario in ["exb",] and not any(intent == "no_esc" for intent in intentions_list):
-            issuestring = get_intuitIssue(esc_model,conversation,response,pr_promptsys)
+            issuestring = get_intuitIssue(esc_model,conversation,response,prompt_sys)
             elements["intuitIssue"] = issuestring 
         
         if chosen_scenario in ["exb","exbn"]:
             elements["e2b"] = get_bu_esc_datatable(ticket_prodname,elements)  # func using dict 
         
         if chosen_scenario in scenarios_requiring_esc and not any(intent == "no_esc" for intent in intentions_list):
-            subjstring, desc_string = get_intuitEsc(esc_model,conversation,response,elements,information,pr_promptsys,pr_prompt1,pr_prompt2,pr_prompt3) # func using dict
+            subjstring, desc_string = get_intuitEsc(esc_model,conversation,response,elements,information,prompt_sys,pr_prompt,esc_prompt) # func using dict
             elements["prepesc2"] = "**Subject:** &nbsp;" + subjstring
             if chosen_scenario in ["exsc","exscn"]:
                 elements["prepesc3"] = "**Description:** &nbsp;\n\n" + "Dear **[Person](https://none)**,\n\n Context: &nbsp;ZD&nbsp;#" + ticket_number + "\n" + desc_string + "\n"
@@ -1562,7 +1561,7 @@ def main():
         print("Scenario is not defined")
 
     last_input = ""
-    last_term_print = term_print_string("Bookmarklet - and press Enter...", " ")
+    last_term_print = term_print_string("Click bookmarklet - and press Enter...", " ")
     print_bright(last_term_print,greenf)
     last_input = input(" ")
     last_input = last_input+" ~"

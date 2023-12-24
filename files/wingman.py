@@ -1,4 +1,5 @@
 ##A scripting tool
+import re
 import copy
 import pyperclip
 from openai import OpenAI
@@ -13,21 +14,12 @@ import platform #Used for clear only
 import time
 import configparser
 
+#Import submodules from the same directory
+from html_walk import get_zd_messages, get_first_pr 
+from printing_funk import *
 
 #javascript:(function() { var htmlContent = document.documentElement.outerHTML; navigator.clipboard.writeText(htmlContent); })();
 
-# ANSI escape codes for bright colors
-bluef = "\033[94;1m"
-lbluef = "\033[96m"
-yellowf = "\033[93;1m"
-greenf = "\033[92m"
-magf = "\033[95m" 
-bcyanf= "\033[96m"
-bgreenf = "\033[32m"
-lgreyf = "\033[37m"
-whitef = "\033[97;1m"
-bredf = "\033[91m"
-resetf = "\033[0m" 
 
 #Find the path where the script is running 
 # to default to config bundled with the executable
@@ -36,34 +28,22 @@ def get_resource_path():
         base_path = sys._MEIPASS
     except Exception:
         print("Error: Could not find the resource path in sys._MEIPASS.")
-        base_path = os.path.abspath(".")
+        base_path = os.path.dirname(os.path.abspath(__file__))
     return base_path
 
 #Get the files from the users documents directory
-home_path = os.path.expanduser("~")
-set_dir_path = os.path.join(home_path, "Documents", "wingman","appdata")
-fallback_path = os.path.join(get_resource_path(),"appdata")
+dir_path = os.path.join(get_resource_path(),"appdata")
+set_dir_path = os.path.join(os.path.expanduser("~"), "Documents", "wingman","appdata")
 
-dir_path = None
 if not dir_path:
 #python script defined path - non executable
     try:
-        file_path = os.path.abspath(__file__)
-        wingman_dir_path = os.path.dirname(file_path)
-        dir_path = os.path.join(wingman_dir_path,"appdata")
-        print("dir_path intuited from python script dir")
+        dir_path = set_dir_path
+        print("dir_path is set to ~/Documents/wingman/appdata")
 #windows executable - defined path in runbook to place config
     except Exception:
-        try:
-            dir_path = set_dir_path
-            print("dir_path is set to ~/Documents/wingman/appdata")
-#fallback to bundled appdata
-        except Exception:
-            try:
-                dir_path = fallback_path
-            except Exception:
-                print("Error: Could not find the resource path in sys._MEIPASS.")
-                dir_path = os.path.abspath(".")
+        print("Error: Could not find the resource path in fallback ~/Documents/wingman/appdata.")
+        dir_path = os.path.abspath(".")
 
 config = configparser.ConfigParser()
 try:
@@ -153,12 +133,6 @@ chrt = "|" #· ⋮
 subindent = " "+chrt+" "
 available_width = terminal_width - len(subindent)
 
-#Global scope vars for ZD scraping
-class_kandy2 = 'sc-5rafq2-0 gEMoXX'
-class_chat = 'sc-wv3hte-1 epkhmy'
-class_chat2 = 'sc-wv3hte-0 eKImJ'
-class_AI_integration = "sc-5rafq2-0 sc-7uf44v-0 gXPtvy"
-pr_classes = [class_kandy2,class_chat,class_chat2,class_AI_integration, "sc-11lm90w-0 dehgfD","sc-54nfmn-2 bLEhML"]
 
 
 #FLOW and changes - define an intent in the following
@@ -188,7 +162,7 @@ intent_sets.update(insertion)
 
 
 insertion = {
-        "restart" : [" refresh ~"," restart ~", " redo ~", " re ~" ], #if entire value is this is implied by starting space and the ending char ~
+        "restart" : [" reload ~", " refresh ~"," restart ~", " redo ~", " re ~" ], #if entire value is this is implied by starting space and the ending char ~
         "quit" : ["quit ~", "exit ~"," qiut ~", "qitu ~", "guti ~", "exti ~" ],
         "cls" : ["close", "cls"],
         "cst" : ["send to customer", "send to cust", "customer", "cust", "cst"],
@@ -234,7 +208,7 @@ insertion = {
         "bz" : [" bz ", "business ops", "bizops ", "exbz",],
         "bu_jira" : [ " bu jira ", "ibueng", "ignite bu eng", "itpef", "ztps", "business ops", " bz ", "bizops", "exbz",],
         "jira_generic" : ["on jira", " jira ", " jra ", " jir ", " jirn ", " jiran",],
-        "acc_mgt" : [" acc ", "account management", "account manager", " am ", " accm ", " accmg ", " accman ", " accmn ", " accmgt "],
+        "acc_mgt" : [" acct ", " acc ", "account management", "account manager", " am ", " accm ", " accmg ", " accman ", " accmn ", " accmgt "],
         "eng" : [" eng ", "engineer", "engineering", "exeng", "exengn"],
         "bu" : [ "exbn", "noc ", " elvt ", " bu ", "exb"], 
         "force_esc" : ["send sc", "send an sc", "bu jira","via esc", "through esc", "by esc", "on esc", 
@@ -247,9 +221,7 @@ intent_sets.update(insertion)
 intent_sets["bu_jira"] += [x+" "+ "jira" for x in intent_sets["bu"]]
 intent_sets["bu_jira"] += [x+" "+ "via jira" for x in intent_sets["bu"]]
 
-intent_sets["force_elevate"] = [x+" "+ y.strip() for x in negations for y in intent_sets["force_esc"]]
-
-intent_sets["force_elevate"] += ["send to bu", "elevation to", "elevate to bu", "elevate to the bu", "bu elevation", "via elev", 
+intent_sets["force_elevate"] = ["send to bu", "elevation to", "elevate to bu", "elevate to the bu", "bu elevation", "via elev", 
                            "to the bu", "send to the bu", "through elev", "by elev", "on elev", "over elev", 
                            "not on jira", "not through jira", "not via jira", "not on sc", 
                            "not through sc", "not via esc", "not through esc", "not on esc",
@@ -260,12 +232,12 @@ intent_sets["force_elevate"] += ["send to bu", "elevation to", "elevate to bu", 
 intent_sets["force_esc"] += [x+" "+ y.strip() for x in negations for y in intent_sets["force_elevate"]]
 
 insertion = {        
-        "chat": ["clsch"," chat ", " cht ",],
+        "chat": ["clschn","clsch"," chat ", " cht ",],
         "clst" : ["ticket", " tkt ", " tckt ","clst"],
         "saas" : [" saas ", " infra t", " infrastructure t", " exsaas "],
         "incident" : [" inc","incident", "incdt"],
         "chg_req" : ["change request", "chng req", "chg req", "chngreq"],
-        "in_esc_update" : [item for item in intent_sets["no_esc"]] + ["in escalation", "in esc ", "pending input",
+        "in_esc_update" : [item for item in intent_sets["no_esc"]] + ["back on hold", "in escalation", "in esc ", "pending input",
                                                                       "waiting", "exold","pending on", "pending with", 
                                                                       "pending over", "update requester", "update cust" ],
         "ibueng" : ["ignite bu eng", "ibueng"],
@@ -298,7 +270,7 @@ scenario_subsets= {
             "yes_pr"        : list(filter(lambda x: x not in ["clsch"], half_list)), 
             "no_pr"         :[ "tsk",]+[item for item in full_list if item.endswith("n")],
             "sum"           :["sum"],
-            "vp"            :["exsc","exscn"],
+            "vp"            :["exsc","exscn","exold","exoldn"],
             "cf"            :["exjira", "exjiran", "exold", "exoldn"],
             "cf_csquery"    :["exjira", "exjiran","exold","exoldn"], 
             "cf_udf"        :["exjira", "exjiran","exold","exoldn"],
@@ -321,7 +293,7 @@ scenario_subsets= {
             "bu"            :["exb","exbn",],
             "force_esc"     :[item for item in full_list if item not in ["exb", "exbn"]],
             "force_elevate" :[item for item in full_list if item not in ["exsc", "exscn","exjira","exjiran"]],
-            "chat"          :["clsch"],
+            "chat"          :["clschn"],
             "clst"          :["clst","clstn"],
             "saas"          :["exjira", "exjiran","exold","exoldn"],
             "incident"      :["exjira", "exjiran","exold","exoldn"],
@@ -355,109 +327,8 @@ for key, value in intent_sets.items():
     global_intents_list.append(key)
 
 #defining functions
-def print_bright(message, color_code):
-    print(f"{color_code}{message}{resetf}")
 
-def term_print_string(string,indent):
-        wrapped_out = []
-        string = string.replace("\n","}n")
-        stringlist = string.split("}n")
-        for sliver in stringlist:
-            wrapped_sliver = textwrap.fill(sliver, width = terminal_width-len(indent), 
-                                           initial_indent = indent, 
-                                           subsequent_indent = indent)
-            wrapped_sliver = wrapped_sliver.replace("}n","\n")
-            wrapped_out.append(wrapped_sliver)
-        string_out = "\n".join(wrapped_out)
-        return string_out
 
-def print_wrapped(string,color):
-     wrapped_string = textwrap.fill(string, width = terminal_width-4, initial_indent = "    ", subsequent_indent = "    ")
-     print_bright(wrapped_string,color)
-
-def print_logo():
-    logo1 = "\\\\    /X    //\n \\\\  //\\\\  //\n  \\\\//  \\\\// \n   V/    V/  "
-
-    logo2 ="""
-.Wxx       w        Wx    
-  yxw     cWWw     1Wx  
-    Ww. cW   Ww   xW   
-     Ww.W     W@|wW   
-      WW       @xW   
-                       """
-    lines = logo1.split("\n")
-    count = 0
-    for line in lines:
-        #line = line[:19]
-        #charlist = []
-        #for char in line:
-         #   char = char.replace(char,2*char)
-          #  charlist.append(char)
-        #line = "".join(charlist)
-        filler="."
-        compute = round((55-len(line)-20)/2)
-        line = line.replace(" ",filler)
-        decoration = filler*(compute-count*2)
-        line = decoration + line + decoration 
-        print_bright(line.center(terminal_width-2),whitef)
-        count += 1
-
-    print_bright(textwrap.fill("Wingman v0.7beta",
-                               terminal_width-10)
-                                .rjust(terminal_width-4),whitef)
-def clear_terminal():
-    if platform.system() == "Windows":
-        os.system('cls')  
-    else:
-        os.system("clear && printf '\033[3J'")  
-
-def set_terminal_size(rows, columns):
-    if platform.system() == "Windows":
-        os.system(f'mode con: cols={columns} lines={rows}')
-
-set_terminal_size(30, 100)
-
-def preserve_newlines(tag):
-    text_parts = []
-    for element in tag.descendants:
-        if element.parent.name == "a":
-            continue
-        if isinstance(element, NavigableString):
-            text = str(element).replace("\n", "[newline]")
-            text_parts.append(text)
-        elif element.name == "br":
-            text_parts.append("[newline]")
-        elif element.name == "p":
-            text_parts.append("[newline]")
-        elif element.name == "li":
-            second_last = len(text_parts) -1
-            text_parts.insert(second_last, "* ",)
-            text_parts.append("[newline]")
-        elif element.name == "strong":
-            text_parts.insert(len(text_parts), "__",)
-        elif element.name == "/strong":
-            text_parts.append("__")
-
-        #elif element.name == "a":
-         #   text_parts.append(str(element))
-    return ''.join(text_parts).replace("[newline]", "\n")
-
-def firstpr_extractor(soup):
-    comment_text = ""
-    class_list_firstpr = ['sc-54nfmn-1 bthKwz','sc-1qvpxi4-1 lvXye','sc-i0djx2-0 fwLKxM']
-    class_list_firstpr.extend(pr_classes)
-    for div in soup.find_all('div', {'class': class_list_firstpr}):
-        if div is None:
-            print("No div")
-        else:
-            comment_div = div.find('div', {'class': ['zd-comment','zd-comment zd-comment-pre-styled',class_chat,class_chat2]})
-            if comment_div:
-                comment_text_pre = comment_div.text[:2000]
-                comment_text = bylinestripper(comment_text_pre)
-            break
-    return comment_text
-
-#ticket_soup sc-lzuyri-0 gOXeKF
 def get_ticket_number(ticket_soup):
     ticketnumber = "**[TicketSearchExcept](https://none)**"
     if ticket_soup is not None:
@@ -512,9 +383,39 @@ def scenario_extractor(instruction_string):
      
     slice1 = " " + slice1 + " " #some of the search terms are defined with leading spaces so this is necessary for search term starting at the beginning of the sentence. The benefit of having space in the search term is it won't fire for term appearing within a word. Example " sc "
     slice1 = slice1.replace("`", " `")
-   #slice one gets passed on 
-    
+       #slice one gets passed on 
 
+    #1 - Send to customer 
+    #2 - Close ticket - with a PR
+    #3 - Place back on hold - with a PR
+    #4 - Send to external team (via Side Conversation)
+    #5 - Send to external team (SaaS Incident)
+    #6 - Send to external team (SaaS Change Request)
+    #7 - Send to external team (Engineering)
+    #8 - Send to external team (BU Jira)
+    #9 - Send to external team (CFIN)
+    #10 - Send to L1 - no PR
+    #11 - Send to L2 - with a PR
+    #12 - Elevate to BU - with a PR 
+    #13 - Summarize chat
+
+
+        #fixed scenarios
+    slice1 = slice1.replace("alt" ," no pr")
+    slice1 = slice1.replace(" 1 " ," send to cust ")
+    slice1 = slice1.replace(" 2 " ," close ticket ") 
+    slice1 = slice1.replace(" 3 " ," send in esc ")
+    slice1 = slice1.replace(" 4 " ," send an sc ") 
+    slice1 = slice1.replace(" 5 " ," send to saas ")
+    slice1 = slice1.replace(" 6 " ," send to saas chg req ")
+    slice1 = slice1.replace(" 7 " ," send to eng ")
+    slice1 = slice1.replace(" 8 " ," send to bu jira ")
+    slice1 = slice1.replace(" 9 " ," send to cf ")
+    slice1 = slice1.replace(" 10 " ," send to l1 no pr ")
+    slice1 = slice1.replace(" 11 "," send to l2 ")
+    slice1 = slice1.replace(" 12 "," send to bu ")
+    slice1 = slice1.replace(" 13 "," sumz ")
+    slice1 = slice1.replace(" 14 "," close chat ")
     def negation_check(string):
         string = string.strip()
         idx_space = string.rfind(" ")
@@ -727,29 +628,6 @@ Try being more specific."
         return form_choice, unique_intents_list #TAPE - took out clue as an output for 2step
 
 
-def bylinestripper(string):
-    start_idx = string.find("Warm regards,")
-    if start_idx == -1:
-        start_idx = string.find("Best regards")
-    if start_idx == -1:
-        start_idx = string.find("Best Regards")
-    if start_idx == -1:
-        start_idx = string.find("Regards")
-    if start_idx == -1:
-        start_idx = string.find("Sincerely,")
-    if start_idx == -1:
-        start_idx = string.find("Kind regards,")
-    if start_idx == -1:
-        start_idx = string.find("Thanks,")
-    if start_idx == -1:
-        start_idx = string.find("Best regard,")
-    if start_idx == -1:
-        start_idx = string.find("Best,")
-    if start_idx != -1:
-        return string[:start_idx-1] #Also removes message history after byline
-    else:
-        return string
-
 def ds_printer(finalstring):
     idx_link_end = finalstring.find("2jr)_\n")
     if idx_link_end != -1:
@@ -821,176 +699,97 @@ def bu_elevation_stripper(string):
     else:
         return string
 
-def get_zd_messages(soup,f_pr):  
-    zd_messages = []
-    messagecounter = []
 
-    
-#Add a feature to scrape the first message if it is an IN
-    first_IN = ""
-    first_IN_pre = ""
-    first_commentorIN = ""
-    sender_name = "John Doe"
-    subj = ""
-    for text in soup.find_all('input', {'class': 'sc-1nvv38f-6 icxrHc StyledTextInput-sc-k12n8x-0 bXXlCE'}):
-        subj = text['value']
-        break
-    if subj != "":
-        subj = " Subject: " +  subj
-    else:
-        subj = ""
-    print_bright(subj,yellowf)
+def append_identities(list_of_messages,names):
+    requester = names["requester"]
+    support_agents = names["support"]
+    filtered_messages = [item for item in list_of_messages if item[0] not in["AI", "ATLAS"]]
+    role_mapping = {name: '|Support Agent|' for name in support_agents}
+    role_mapping.update({name: '|Requester|' for name in requester})
+    names_and_messages = [[f">>{role_mapping.get(name,"")} {name}", message] for name, message in filtered_messages]
+    split_frames = []
 
-    for div in soup.find_all('div', {'class':['sc-1wvqs23-0 dTcJJt','sc-qzyw2x-0 kTuPsA']}):
-        if div is None:
-            print("No div when looking for first IN ATTENTION")
+    def message_multiplier(names_msg_list, re_spacer):
+        merge_stage = []
+        for name, message in names_msg_list:
+            split_messages = re.split(re_spacer, message)
+            if len(split_messages) > 1:
+                for i in range(1, len(split_messages)):
+                    split_messages[i] = "#.#" + split_messages[i]
+            for split_message in split_messages:
+                piece = [name,split_message]
+                merge_stage.append(piece)
+        return merge_stage 
+    from_pattern = r"From:"
+    wrote_pattern = r"On (?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)," 
+    names_and_messages = message_multiplier(names_and_messages, from_pattern)
+    names_and_messages = message_multiplier(names_and_messages, wrote_pattern)
+    mod_n_and_m = []
+    for name, message in names_and_messages:
+        if message.startswith("#.#"):
+            sliver= message[:50]
+            idx_at = sliver.find("@")
+            if idx_at == -1:
+                idx_at = sliver.find(">")
+            if idx_at != -1:
+                new_message = message[idx_at+1:]
+                new_name = f">>|Someone| {message[3:idx_at]}"
+            else:
+                new_message = message[3:]
+                new_name = f">>|Someone|"
+            mod_n_and_m.append([new_name, new_message]) 
         else:
-            all_comments = div.find_all_next('div', {'class': ['zd-comment','zd-comment zd-comment-pre-styled']})
-            if all_comments:
-                for comment in all_comments:   
-                    first_commentorIN =  comment.text #MAIN EXTRACTION
-                    first_IN_pre = bylinestripper(first_commentorIN)
-                    break
-            strong_text = div.find('strong')
-            sender_name = "No name"
-            if strong_text:
-                sender_name = strong_text.text.strip()
-                if sender_name.find(" "):
-                    sender_name = sender_name.split()[0]
+            mod_n_and_m.append([name, message])
 
-            numtal_IN = 0 
-            for char in sender_name:
-                assignednum_IN = ord(char)
-                numtal_IN = numtal_IN + assignednum_IN
-            if numtal_IN not in messagecounter:
-                messagecounter.append(numtal_IN)
+    combined_list = [f"{label}:\n {message} \n-------\n" for label,message in mod_n_and_m]
+    return combined_list 
 
-            first_IN = sender_name+ " said: \n " + "| " + first_IN_pre
-#            print("\nfirst_IN: \n" + first_commentorIN[:50])
-#            print("\nfirst_pr: \n' " + f_pr[:50])
-            break
-
-    if first_commentorIN[:50] != f_pr[:50]:
-        #print("\n Making SURE to print first IN as it is different from the inclusion in messages \n")
-        print_bright(" "+sender_name + ": ",whitef)
-        #print("first IN fired:" + repr(sender_name)) #debug
-        fed_IN = first_IN_pre.replace("\n\n","}n")
-        fed_IN = fed_IN.replace("\n","}n")
-        split_IN = fed_IN.split("}n")
-        split_IN_print_list = []
-        for sliver in split_IN:
-            wrapped_comment = textwrap.fill(sliver,
-                                            width=available_width,                                        
-                                            initial_indent=subindent,
-                                            subsequent_indent=subindent,
-                                            )
-            split_IN_print_list.append(wrapped_comment) 
-        wrapped_comment = "\n".join(split_IN_print_list)  
-        wrapped_comment = wrapped_comment.replace("}n","\n "+chrt + " ")
-        print_bright(wrapped_comment+"\n",yellowf) #main printing is happening here
-    zd_pr_list = ['sc-54nfmn-1 bthKwz','sc-1qvpxi4-1 lvXye','sc-i0djx2-0 fwLKxM']
-    zd_pr_list.extend(pr_classes)
-    for div in soup.find_all(['div','bdi'], {'class': zd_pr_list}):
-
-        if div is None:
-            print("No div") 
-        else:
-            sender_name = "No name"
-            for title in div.find_all_previous('div', {'class': ['sc-1gwyeaa-2 icjiLH','sc-yhpsva-1 dtIjfP']}):
-                strong_text = title.find('strong')
-                if strong_text:
-                    sender_name_pre = strong_text.text.strip()
-                    if sender_name_pre.find(" "):
-                        sender_name = sender_name_pre.split()[0]
-                    break
-            numtal = 0
-            for char in sender_name:
-                assignednum = ord(char)
-                numtal = numtal + assignednum
-            if numtal not in messagecounter:
-                messagecounter.append(numtal)
-            if numtal in messagecounter:
-                index = messagecounter.index(numtal)+1
-
-        # Get the Comment      
-            comment_div = div.find(['div','bdi'], {'class': ['zd-comment','zd-comment zd-comment-pre-styled',class_chat,class_chat2, "sc-11lm90w-0 dehgfD"]})
-            comment_text = "No comment"
-            if comment_div is not None:
-                comment_text_pre = preserve_newlines(comment_div)
-                comment_text_pre = comment_text_pre[:2000]
-                comment_text = bylinestripper(comment_text_pre)
-                comment_text_temp_strip = comment_text.replace("\n"," ")
-                comment_text_temp_strip = comment_text_temp_strip.replace("\xa0"," ")
-                comment_text_temp_strip = ' '.join(comment_text_temp_strip.split())                
-                chars_rm = len(comment_text) - len(comment_text_temp_strip)
-                idx_name = comment_text_temp_strip.find(sender_name_pre)
-                if idx_name != -1:
-                    idx_name_slicer = comment_text.rfind(sender_name) 
-                    comment_text = comment_text[:idx_name_slicer]
-                else:
-                    idx_name = comment_text.find("I declare that the data in this ticket")
-                    if idx_name != -1:
-                        comment_text = comment_text[:idx_name]
-            if comment_text != "No comment":
-                print_bright(" "+sender_name + ": ",whitef)
-                #print("Main fired:" + repr(sender_name)) #debug
-                fed_comment = comment_text.replace("\n\n\n","}n}n")
-                fed_comment = comment_text.replace("\n\n","}n}n")
-                fed_comment = fed_comment.replace("\n","}n")
-                split_fed = fed_comment.split("}n")
-                split_fed_print_list = []
-                for sliver in split_fed:
-                    wrapped_comment = textwrap.fill(sliver, 
-                                                    width=available_width,
-                                                    initial_indent=subindent,
-                                                    subsequent_indent=subindent,
-                                                    )
-                    split_fed_print_list.append(wrapped_comment) 
-                if len(split_fed_print_list) > 0:
-                    if split_fed_print_list[0] == "":
-                        split_fed_print_list.pop(0)
-                    if len(split_fed_print_list) > 0:
-                        if split_fed_print_list[-1] == "":
-                            split_fed_print_list.pop(-1)
-                wrapped_comment = "\n".join(split_fed_print_list)
-                wrapped_comment = wrapped_comment.replace("\n\n\n","\n "+chrt+" \n")
-                wrapped_comment = wrapped_comment.replace("\n\n","\n "+chrt+" \n")
-                wrapped_comment = wrapped_comment.replace("}n","\n "+chrt+" ")
-                #if the counter is an even number
-                if index == 1:    #main printing is happening here 
-                    print_bright(wrapped_comment,yellowf)
-                    underliner = "`"*(terminal_width-4)
-                    print("\n")
-                    #print_bright(underliner.center(terminal_width),yellowf)
-    #                elif index == 1:
-    #                    print_bright(wrapped_comment+"\n",yellowf)
-    #                elif index == 3:
-    #                    print_bright(wrapped_comment+"\n",magf)
-    #                elif index == 4:
-    #                    print_bright(wrapped_comment+"\n",greenf)
-    #                elif index % 2 != 0:
-    #                    print_bright(wrapped_comment+"\n",bredf)
-                else:
-                    print_bright(wrapped_comment,bcyanf) #main printing is happening here
-                    print("\n")
-                    #print_bright(underliner.center(terminal_width),bcyanf)
-                zd_messages.append(f"{sender_name} said: \n | {comment_text}")
-
-    zd_messages_str = "\n".join(zd_messages)
-    if first_commentorIN[:50] == f_pr[:50] and len(zd_messages_str) > 100:
-        zd_messages_str =  zd_messages_str[-7000:]
+def get_intuitSummary(list_of_messages):
+    if len(list_of_messages) > 10:
+        short_list = list_of_messages[:4] + list_of_messages[-6:]
     else:
-        zd_messages_str =  first_IN + "\n" + zd_messages_str[-7000:]
-    found_colon = zd_messages_str.find(":")
-    if found_colon != -1:
-        zd_messages_str = zd_messages_str[:found_colon+1] + "\n" + subj + "\n" + zd_messages_str[found_colon+1:]
-#    with open(f"{dir_path}/logs/log_last_zd_messages.txt", "w") as f:
-#        f.write("ZD MESSAGES including FIRST IN: \n\n" + zd_messages_str)
-#    with open(f"{dir_path}/logs/log_last_zd_messages.txt", "a") as f:
-#        f.write("\n\n\n\n\n\nfirst_IN FOUND: \n" + first_IN)
-    return zd_messages_str
+        short_list = list_of_messages
+    short_list_str = "\n".join(short_list)
+    client = OpenAI()
+    sys_prompt = "You are a secretary who directs staff on open tickets by clarifying next steps"
+    user_prompt = ( "Look at the messages that are in chronological order."
+                   "As a response:\n - in a single sentence summarize the request, and the crux of the matter "
+                   "(based on specific information in the messages 'Issue:' "
+                   " \n - if relevant, to bring an agent up to speed, in phrases, what has support already done "
+                   "updated the customer on.'Actions taken:'"
+                   "\n - in a single phrase what is the latest on the situation. Mention details 'Now:'"
+                    f"\n---\nMessages: \n {short_list_str} \n---\n")
+    the_issue = client.chat.completions.create(
+            model = "gpt-3.5-turbo-1106",
+            temperature = 0.4,
+            messages = [
+                {"role":"system","content": sys_prompt },
+                {"role":"user","content": user_prompt },
+                ]
+            )
+    string = str(the_issue.choices[0].message.content)
+    issue_string = string 
+    actions_string = ""
+    now_string = ""
+    summary_flag = False
+    issue_idx = string.find("Issue:")
+    if issue_idx == -1:
+        issue_idx = string.find("Summary:")
+        if issue_idx != -1:
+            summary_flag = True
+    actions_idx = string.find("Actions taken:")
+    now_idx = string.find("Now:")
 
-
+    if issue_idx != -1 and actions_idx != -1 and not summary_flag:
+        issue_string = string[issue_idx+len("Issue:"):actions_idx]
+    if issue_idx != -1 and actions_idx != -1 and summary_flag:
+        issue_string = string[issue_idx+len("Summary:"):actions_idx]
+    if actions_idx != -1 and now_idx != -1:
+        actions_string = string[actions_idx+len("Actions taken:"):now_idx]
+    if now_idx != -1:
+        now_string = string[now_idx+len("Now:"):]
+    list_output = [issue_string, actions_string, now_string]
+    return list_output
 
 def get_intuitPR(model_input,conversation,preseeded_context,seededclue,pr_promptsys,pr_prompt1,pr_prompt2):
     client = OpenAI()
@@ -1006,15 +805,16 @@ def get_intuitPR(model_input,conversation,preseeded_context,seededclue,pr_prompt
     #print("Processing pr_promptsys: " + pr_promptsys[:40])
     completion = client.chat.completions.create(
         model=model_input,
-      
+        temperature=0.8,  
         messages=[
         {"role": "system", "content": pr_promptsys},
-        {"role": "user", "content": pr_prompt1 + "Conversation:\n" + conversation + "Clue:\n" + clue},
-        #{"role": "assistant", "content": "<response redacted>"},
-        #{"role": "user", "content": pr_prompt2},
+        {"role": "user", "content": pr_prompt1 },
+        {"role": "assistant", "content": "Ok. Provide the conversation and the suggested_reply."},
+        {"role": "user", "content": "Conversation:\n" + conversation},
+        {"role": "assistant", "content": "Ok. Provide the suggested_reply."},
+        {"role": "user", "content": "suggested_reply:\n" + clue},
         ]
     )
-    
     string = str(completion.choices[0].message.content)
     string = bylinestripper(string) 
     return string
@@ -1023,6 +823,7 @@ def get_intuitIssue(model_input,conversation,response,pr_promptsys):
     client = OpenAI()
     subject = client.chat.completions.create(
             model=model_input,
+            temperature=0.8,
             messages=[
                 {"role":"system","content": "You are a customer support agent routing customer issues to other teams"},
                 {"role":"user","content":  "Look at the messages in conversation and the last response sent to the customer, then summarize the customer issue in a single line or very short para, retain specific information:\n" + conversation + "Response:" + response},
@@ -1037,6 +838,7 @@ def get_intuitEsc(model_input,conversation,response,dictname,clue,pr_promptsys,p
     client = OpenAI()
     subject = client.chat.completions.create(
             model=model_input,
+            temperature=0.8,
             messages=[
                 {"role":"system","content": pr_promptsys +"Sometimes have to reach out to the finance and other teams within the company, to ask them for information, or help"},
                 {"role":"user","content": pr_prompt1 + "Conversation with format '[Person Name] said':\n" + conversation + "Clue:\n" + clue},
@@ -1294,7 +1096,7 @@ def dict_writer(orig_intent_list, global_intents_list, dict_to_update):
                         ("mhtimer","9999 &nbsp;"),
                         ("mhtarget","Other &nbsp;\n"),
                      ],
-        "categ_sc": [   ("mhteam","BU Customer Success/Sales/SOP &nbsp;"),
+        "categ_sc": [   ("mhteam","[**plc**](https://none)"),
                         ("mhreason","SC"),
                         ("mhtimer","168 &nbsp;"),
                         ("mhtarget","Other &nbsp;\n"),
@@ -1341,7 +1143,7 @@ def dict_writer(orig_intent_list, global_intents_list, dict_to_update):
             for to_change, the_change in changes:
                 stage_it(to_change,the_change)
     if "mhteam" in staging_dict:
-        escalation_target = staging_dict["mhtarget"].strip().lower()
+        escalation_target = staging_dict.get("mhtarget", "error:intents didn't populate mhtarget").strip().lower()
         if "&nbsp; other" in escalation_target and any(intent not in ["exold","exoldn"] for intent in intent_list):
             staging_dict["mhtarget"] += "\n[Prep Escalation to be done by QC'er one step.](https://none)"
 
@@ -1456,7 +1258,8 @@ forms = {
 temp_dict = {}
 for key, sequence in forms.items():
     nkey = key+"n"
-    exclusion_list = spr + gpt
+    stage_a_list = spr + gpt + jira + sc + engesc
+    exclusion_list = [item for item in stage_a_list if item not in ["ret"]] 
     nvalue = list(filter(lambda x: x not in exclusion_list, sequence))
     temp_dict[nkey] = nvalue
 forms.update(temp_dict)
@@ -1561,31 +1364,31 @@ def main():
     for key in elements:
         elements[key] = elements_orig[key]
 
-    pr_promptsys = "You are a customer support agent trained in responding to customers. Don't repeat yourself too much and avoid mentioning an ETA or promising resolution. Customers or internal requesters that reach out via email are either facing a technical issue or looking to get a request processed, and actioned."
+    pr_promptsys = "You are a customer support agent trained in responding to customers. Customers or internal requesters that reach out via email are either facing a technical issue or looking to get a request processed, and actioned."
 
-    pr_prompt1 = f"""Write a response to the last message from the customer in a conversation provided to you.  Make sure of the following:
-        -Use direct action oriented language.
-        -Don't be overly obsequious.
-        -Don't repeat yourself too much
-        -Use active voice if appropriate.
-        -Use a salutation like "Dear [First Name]"
+    pr_prompt1 = f"""Write a brief response to the last message from the customer in the conversation provided to you. Your response should be based off the suggested_reply I provide which is what I want to tell the customer after having worked on this ticket. \n Rules and style guide:
         -If replying to the first message from the requestor i.e. if there are no existing replies from the support team,the first line should be: "Thank you for contacting <product> Support team. I understand ...
-        -Draft a response considering the information in the clue which provides you with context on how to shape your response. You may rephrase and regurgitate the clue where it is relevant for the customer/requester. 
-
-        I am providing the following inputs:"""
+        -Stick to the information provided.
+        -Don't be obsequious.
+        -Use active voice if appropriate.
+        -Use direct action oriented language.
+        -Don't repeat yourself too much
+        -Write in a concise manner.
+        -Use a salutation like "Dear [First Name]"
+        """
 
         
          
     pr_prompt2 = "Please rewrite the response basing it mostly on the clue provided earlier. If the clue indicates additional actions have happened after the Conversation, take those into consideration."
 
-    pr_prompt3 = """Ok. Now considering the information about what to do in the clue, and also the conversation and response sent already to the customer, write to the team as relevant being mindful that:
+    pr_prompt3 = """Ok. Now considering the clues in the suggested_reply, and also the conversation and response sent already to the customer, write to the team as relevant being mindful that:
     -you should be concise
     -state the problem and what needs to be done; don't exhort too much
     -you should be precise
     -you should use a brevity of words
     -start with "Subject:"
     -start the body with "Description:"
-    -if provided in the conversation or the clue include specific details and reference numbers and names verbatim 
+    -if provided in the conversation or the suggested_reply include specific details and reference numbers and names verbatim 
     -no byline
 """
     #Print the logo
@@ -1613,8 +1416,17 @@ def main():
         if target_div:
             soup = target_div
         #END TAPE
-        f_pr = firstpr_extractor(soup)
-        conversation = get_zd_messages(soup,f_pr)
+        f_pr = get_first_pr(soup)
+        conversation,list_of_messages,names = get_zd_messages(soup,f_pr)
+        amended_list = append_identities(list_of_messages,names)
+        next_action = get_intuitSummary(amended_list) # debug
+        print_bright("__Issue:",lbluef)
+        print_bright(term_print_string(next_action[0]," "),magf)
+        print_bright("__Actions taken:", lbluef)
+        print_bright(term_print_string(next_action[1]," "),magf)
+        print_bright("__Now:",lbluef)
+        print_bright(term_print_string(next_action[2], " "),magf)
+
     else:
         print_bright("No HTML content found in clipboard. Please copy a Zendesk ticket or chat conversation and try again.",bredf)
         soup = BeautifulSoup("<html></html>", 'html.parser')
@@ -1622,9 +1434,23 @@ def main():
         conversation = ""
     
     elements["byline"] =  "Best regards,\n"+ agent_name+"\nX Support Team\n"
-   
-    wrapped_instruction = term_print_string("What do you want to do? e.g. Close ticket no pr | Escalate to Rishap CSquery | send to saas inc:",
-                                        " ")
+    main_scenario_instruction = (   "Pick a scenario:\ne.g. type '1', or type 'alt 1' for DS only no pr.\n\n"
+                                    "1  - Send to customer\n"
+                                    "2  - Close ticket - with a PR\n"
+                                    "3  - Place back on hold - with a PR\n"
+                                    "4  - Send to external team (via an SC)\n"
+                                    "5  - Send to external team (SaaS Inc.)\n"
+                                    "6  - Send to external team (SaaS Chg Req)\n"
+                                    "7  - Send to external team (Engineering)\n"
+                                    "8  - Send to external team (BU Jira)\n"    
+                                    "9  - Send to external team (CFIN)\n"
+                                    "10 - Send to L1 - no PR\n"
+                                    "11 - Send to L2 - with a PR\n"
+                                    "12 - Elevate to BU - with a PR\n"
+                                    "13 - Summarize chat\n"
+                                    "14 - Close chat - no PR\n"
+                                 )
+    wrapped_instruction = term_print_string(main_scenario_instruction, " ")
     print("\n")
     print_bright(wrapped_instruction,greenf)
     print(sep)
@@ -1754,53 +1580,3 @@ while True:
     main()
 
 
-
-#def get_install_path():
-#    try:
-#        registry_key = reg.OpenKey(reg.HKEY_CURRENT_USER, "Software\\Trilogy\\Wingman", 0, reg.KEY_READ)
-#        install_path = reg.QueryValueEx(registry_key, "InstallPath")[0]
-#        reg.CloseKey(registry_key)
-#        return install_path
-#    except WindowsError:
-#        return None
-
-
-#import difflib
-#
-#def capture_globals():
-#    """
-#    Capture the current state of global variables.
-#    It filters out built-in modules and variables for clarity.
-#    """
-#    global_vars = globals().copy()
-#    return {k: v for k, v in global_vars.items() if not k.startswith('__') and not hasattr(v, '__call__')}
-#
-#def serialize_snapshot(snapshot):
-#    """
-#    Serialize the snapshot to a JSON string.
-#    Replace non-serializable values with a placeholder.
-#    """
-#    def default(o):
-#        return f"<<non-serializable: {type(o).__name__}>>"
-#    return json.dumps(snapshot, default=default, sort_keys=True, indent=4)
-#
-#def compare_snapshots(snapshot1, snapshot2):
-#    """
-#    Compare two snapshots using difflib and print the differences.
-#    """
-#    diff = difflib.unified_diff(
-#        snapshot1.splitlines(keepends=True),
-#        snapshot2.splitlines(keepends=True),
-#        fromfile='snapshot1', tofile='snapshot2', lineterm=''
-#    )
-#    for line in diff:
-#        print(line)
-#
-#def log_globals():
-#    with open('globals_log.txt', 'a') as file:
-#        for name, value in globals().items():
-#            if not name.startswith('__'):
-#                file.write(f'{name} = {value}\n')
-#
-#WIN dir_path = get_install_path()
-#WIN import winreg as reg

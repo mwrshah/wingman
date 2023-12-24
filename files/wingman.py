@@ -13,6 +13,7 @@ import json
 import platform #Used for clear only
 import time
 import configparser
+import yaml
 
 #Import submodules from the same directory
 from html_walk import get_zd_messages, get_first_pr 
@@ -124,6 +125,15 @@ except Exception as e:
     print("An error occured while loading the hidden_key.txt file.")
     print(e)
 
+
+try: 
+    with open(os.path.join(dir_path, 'prompts.yaml'),'r') as f:
+        prompts = yaml.safe_load(f)
+except FileNotFoundError:
+    print("The prompts.yaml file is missing.")
+except Exception as e:
+    print("An error occured while loading the prompts.yaml file.")
+    print(e)
 os.environ["OPENAI_API_KEY"]= api_key
 
 
@@ -795,14 +805,14 @@ def get_intuitSummary(list_of_messages):
     list_output = [issue_string, actions_string, now_string]
     return list_output
 
-def get_intuitPR(model_input,conversation,seededclue,prompt_sys,pr_prompt):
+def get_intuitPR(model_input,conversation,seededclue,sys_prompt,pr_prompt):
     client = OpenAI()
     clue = seededclue
     completion = client.chat.completions.create(
         model=model_input,
         temperature=0.8,  
         messages=[
-        {"role": "system", "content": prompt_sys},
+        {"role": "system", "content": sys_prompt},
         {"role": "user", "content": pr_prompt },
         {"role": "assistant", "content": "Ok. Provide the conversation and the suggested_reply."},
         {"role": "user", "content": "Conversation:\n" + conversation},
@@ -814,7 +824,7 @@ def get_intuitPR(model_input,conversation,seededclue,prompt_sys,pr_prompt):
     string = bylinestripper(string) 
     return string
 
-def get_intuitIssue(model_input,conversation,response,prompt_sys):
+def get_intuitIssue(model_input,conversation,response,sys_prompt):
     client = OpenAI()
     subject = client.chat.completions.create(
             model=model_input,
@@ -829,13 +839,13 @@ def get_intuitIssue(model_input,conversation,response,prompt_sys):
 
 
 #Its not nice that dict is getting written to directly for the prepesc2 key. TAPE
-def get_intuitEsc(model_input,conversation,response,dictname,clue,prompt_sys,pr_prompt,esc_prompt):
+def get_intuitEsc(model_input,conversation,response,dictname,clue,sys_prompt,pr_prompt,esc_prompt):
     client = OpenAI()
     subject = client.chat.completions.create(
             model=model_input,
             temperature=0.8,
             messages=[
-                {"role":"system","content": prompt_sys +"Sometimes have to reach out to the finance and other teams within the company, to ask them for information, or help"},
+                {"role":"system","content": sys_prompt +"Sometimes have to reach out to the finance and other teams within the company, to ask them for information, or help"},
                 {"role":"user","content": pr_prompt + "Conversation with format '[Person Name] said':\n" + conversation + "Clue:\n" + clue},
                 {"role":"assistant","content":response},
                 {"role":"user", "content": esc_prompt}, 
@@ -1357,40 +1367,11 @@ def main():
     for key in elements:
         elements[key] = elements_orig[key]
 
-    prompt_sys = "You are a customer support agent trained in responding to customers. Customers or internal requesters that reach out via email are either facing a technical issue or looking to get a request processed, and actioned."
+    sys_prompt = prompts['sys']
+    pr_prompt = prompts['pr']
+    sum_prompt = prompts['sumx'] 
+    esc_prompt = prompts['esc']
 
-    pr_prompt = f"""Write a brief response to the last message from the customer in the conversation provided to you. Your response should be based off the suggested_reply I provide which is what I want to tell the customer after having worked on this ticket. \n Rules and style guide:
-        -If replying to the first message from the requestor i.e. if there are no existing replies from the support team,the first line should be: "Thank you for contacting <product> Support team. I understand ...
-        -Stick to the information provided.
-        -Don't be obsequious.
-        -Use active voice if appropriate.
-        -Use direct action oriented language.
-        -Don't repeat yourself too much
-        -Write in a concise manner.
-        -Use a salutation like "Dear [First Name]"
-        """
-
-    sum_prompt = f""""write to the customer after the chat conversation you just had with them and provide a summary of the conversation skipping the less important back and forth and focusing mostly on the request and outcome.\n Rules and style guide:
-        -Begin with 'Dear [First_Name], \nThank you for contacting <product> Support Team about...'
-        -Don't overly empathise, but be polite.
-        -Don't be obsequious.
-        -Use active voice if appropriate.
-        -Use direct action oriented language.
-        -Don't repeat yourself too much
-        -Write in a concise manner.
-        -Use a salutation like "Dear [First Name]"
-"""
-
-    esc_prompt = """Ok. Now considering the clues in the suggested_reply, and also the conversation and response sent already to the customer, write to the team as relevant being mindful that:
-    -you should be concise
-    -state the problem and what needs to be done; don't exhort too much
-    -you should be precise
-    -you should use a brevity of words
-    -start with "Subject:"
-    -start the body with "Description:"
-    -if provided in the conversation or the suggested_reply include specific details and reference numbers and names verbatim 
-    -no byline
-"""
     #Print the logo
     sep = " "+"-"*(terminal_width-2)
     print(sep)
@@ -1419,13 +1400,13 @@ def main():
         f_pr = get_first_pr(soup)
         conversation,list_of_messages,names = get_zd_messages(soup,f_pr)
         amended_list = append_identities(list_of_messages,names)
-        next_action = get_intuitSummary(amended_list) # debug
+        resp_list = get_intuitSummary(amended_list) 
         print_bright("__Issue:",lbluef)
-        print_bright(term_print_string(next_action[0]," "),magf)
+        print_bright(term_print_string(resp_list[0]," "),magf)
         print_bright("__Actions taken:", lbluef)
-        print_bright(term_print_string(next_action[1]," "),magf)
+        print_bright(term_print_string(resp_list[1]," "),magf)
         print_bright("__Now:",lbluef)
-        print_bright(term_print_string(next_action[2], " "),magf)
+        print_bright(term_print_string(resp_list[2], " "),magf)
 
     else:
         print_bright("No HTML content found in clipboard. Please copy a Zendesk ticket or chat conversation and try again.",bredf)
@@ -1513,9 +1494,9 @@ def main():
                 information = "N/A"
             else:
                 prompt_to_use = pr_prompt
-            #Insert product in PR PRomtp sys
+            #Insert product in prompt 
             prompt_to_use = prompt_to_use.replace("<product>", ticket_prodname,1)
-            response = get_intuitPR(pr_model,conversation,information,prompt_sys,prompt_to_use)
+            response = get_intuitPR(pr_model,conversation,information,sys_prompt,prompt_to_use)
             elements["intuitPR"] = response
 
         subjstring = "" 
@@ -1523,14 +1504,14 @@ def main():
         issuestring = ""
 
         if chosen_scenario in ["exb",] and not any(intent == "no_esc" for intent in intentions_list):
-            issuestring = get_intuitIssue(esc_model,conversation,response,prompt_sys)
+            issuestring = get_intuitIssue(esc_model,conversation,response,sys_prompt)
             elements["intuitIssue"] = issuestring 
         
         if chosen_scenario in ["exb","exbn"]:
             elements["e2b"] = get_bu_esc_datatable(ticket_prodname,elements)  # func using dict 
         
         if chosen_scenario in scenarios_requiring_esc and not any(intent == "no_esc" for intent in intentions_list):
-            subjstring, desc_string = get_intuitEsc(esc_model,conversation,response,elements,information,prompt_sys,pr_prompt,esc_prompt) # func using dict
+            subjstring, desc_string = get_intuitEsc(esc_model,conversation,response,elements,information,sys_prompt,pr_prompt,esc_prompt) # func using dict
             elements["prepesc2"] = "**Subject:** &nbsp;" + subjstring
             if chosen_scenario in ["exsc","exscn"]:
                 elements["prepesc3"] = "**Description:** &nbsp;\n\n" + "Dear **[Person](https://none)**,\n\n Context: &nbsp;ZD&nbsp;#" + ticket_number + "\n" + desc_string + "\n"

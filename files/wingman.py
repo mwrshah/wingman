@@ -48,7 +48,7 @@ if not dir_path:
 
 config = configparser.ConfigParser()
 try:
-    config.read(os.path.join(dir_path, 'config.ini'))
+    config.read(os.path.join(set_dir_path, 'config.ini'))
 except Exception as e:
     print("Error: Could not read the config.ini file.")
     print(e)
@@ -82,7 +82,7 @@ except KeyError:
 #Fileload products and their jira links from json files
 
 try:
-    with open(os.path.join(dir_path, 'products_to_jiras.json'),'r') as f:
+    with open(os.path.join(set_dir_path, 'products_to_jiras.json'),'r') as f:
         products_to_jiras = json.load(f)
 except json.JSONDecodeError:
     print("The products_to_jiras.json file is corrupted or invalid.")
@@ -93,7 +93,7 @@ except Exception as e:
     print(e)
 
 try:
-    with open(os.path.join(dir_path, 'saas_jira_links.json'),'r') as f:
+    with open(os.path.join(set_dir_path, 'saas_jira_links.json'),'r') as f:
         saas_jira_links = json.load(f)
 except json.JSONDecodeError:
     print("The saas_jira_links.json file is corrupted or invalid.")
@@ -105,7 +105,7 @@ except Exception as e:
 
 
 try:
-    with open(os.path.join(dir_path, 'bu_jira_links.json'),'r') as f:
+    with open(os.path.join(set_dir_path, 'bu_jira_links.json'),'r') as f:
         bu_jira_links = json.load(f)
 except json.JSONDecodeError:
     print("The bu_jira_links.json file is corrupted or invalid.")
@@ -127,7 +127,7 @@ except Exception as e:
 
 
 try: 
-    with open(os.path.join(dir_path, 'prompts.yaml'),'r') as f:
+    with open(os.path.join(set_dir_path, 'prompts.yaml'),'r') as f:
         prompts = yaml.safe_load(f)
 except FileNotFoundError:
     print("The prompts.yaml file is missing.")

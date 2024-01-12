@@ -66,7 +66,7 @@ try:
     elif "gpt-4" in pr_model_value:  
         esc_model = "gpt-4"
 except KeyError:
-    esc_model = get_gpt_from_file("esc_model",dir_path,"gpt-4-1106-preview")
+    esc_model = "gpt-4-1106-preview"
 
 #get the gpt model for prs
 try:
@@ -76,7 +76,7 @@ try:
     elif "gpt-4" in pr_model_value:
         pr_model = "gpt-4"
 except KeyError:
-    pr_model = get_gpt_from_file("pr_model",dir_path,"gpt-4-1106-preview")
+    pr_model = "gpt-4"
 
 
 #Fileload products and their jira links from json files
@@ -200,6 +200,7 @@ intent_sets["no_pr"] += [x+" "+ y.strip() for x in negations for y in intent_set
 
 insertion = {
         "sum" : ["summarize", " summ", " smrz ", " sumri ",  " smri",  "summary", " sumr "," sumz ", " smz ", " smry " ],
+        "ext" : ["external to esw", "ext to esw",],
         "vp" : [" vp "],
         "cf" : [" credit memo ", " cfin ", "to finance"," the finan", " fin ","cf ", "central finance", "treasury", " ap ", "collect cash", "udf", "accounts pay", " rishap", "cquery", "write off", "vendor reg", "vendor pay", "o2c", "record maint", "record mn", "record man", "record mg"],
         "cf_csquery" : ["csquery", "rishap"], 
@@ -280,6 +281,7 @@ scenario_subsets= {
             "yes_pr"        : list(filter(lambda x: x not in ["clsch"], half_list)), 
             "no_pr"         :[ "tsk",]+[item for item in full_list if item.endswith("n")],
             "sum"           :["sum"],
+            "ext"           :["exsc", "exscn", "exold", "exoldn"],
             "vp"            :["exsc","exscn","exold","exoldn"],
             "cf"            :["exjira", "exjiran", "exold", "exoldn"],
             "cf_csquery"    :["exjira", "exjiran","exold","exoldn"], 
@@ -723,6 +725,7 @@ def append_identities(list_of_messages,names):
         merge_stage = []
         for name, message in names_msg_list:
             split_messages = re.split(re_spacer, message)
+            split_messages = list(reversed(split_messages))
             if len(split_messages) > 1:
                 for i in range(1, len(split_messages)):
                     split_messages[i] = "#.#" + split_messages[i]
@@ -731,7 +734,7 @@ def append_identities(list_of_messages,names):
                 merge_stage.append(piece)
         return merge_stage 
     from_pattern = r"From:"
-    wrote_pattern = r"On (?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)," 
+    wrote_pattern = r"On [A-Z][a-z]{2}\b,?"
     names_and_messages = message_multiplier(names_and_messages, from_pattern)
     names_and_messages = message_multiplier(names_and_messages, wrote_pattern)
     mod_n_and_m = []
@@ -750,7 +753,7 @@ def append_identities(list_of_messages,names):
             mod_n_and_m.append([new_name, new_message]) 
         else:
             mod_n_and_m.append([name, message])
-
+    
     combined_list = [f"{label}:\n {message} \n-------\n" for label,message in mod_n_and_m]
     return combined_list 
 
@@ -974,25 +977,6 @@ def get_name_from_file(dir_path):
 #default_gpt_model = "gpt-4-1106-preview"
 #default_gpt_model = "gpt-4"
 
-def get_gpt_from_file(use_case,dir_path,default_gpt_model):
-    with open(dir_path+"/config.ini", "r") as f:
-        config_text = f.read()
-        where_use_case = config_text.find(use_case+" = ") 
-        if where_use_case != -1:
-            post_where_use_case = where_use_case + len(use_case+" = ")
-            use_case_model_value = config_text[post_where_use_case:post_where_use_case+12]
-            use_case_model_value = use_case_model_value.strip()
-            if "gpt-4-turbo" in use_case_model_value:
-                use_case_model = "gpt-4-1106-preview"
-            elif "gpt-4" in use_case_model_value:  
-                use_case_model = "gpt-4"
-            else:
-                use_case_model = default_gpt_model
-                print(f"{use_case} model 'value' incorrect in wm_config.txt. Using {default_gpt_model}")
-        else:
-            use_case_model = "gpt-4-1106-preview"
-            print(f"{use_case} model not found in wm_config.txt. Using {default_gpt_model}")
-        return use_case_model        
 
 
 #Define a rich text table for escalate to BU
@@ -1078,6 +1062,11 @@ def dict_writer(orig_intent_list, global_intents_list, dict_to_update):
                             ("mhtimer","9999 &nbsp;"),
                             ("mhtarget","Other &nbsp;\n"),
                          ],
+        "ext": [    ("mhteam","External to ESW"),
+                    ("mhreason","Waiting to happen"),
+                    ("mhtimer","168 &nbsp;"),
+                    ("mhtarget","Other &nbsp;\n"),
+                ],
         "bu": [ ("mhteam","BU Other &nbsp;"),
                 ("mhreason","Awaiting elevation"),
                 ("mhtimer","4 &nbsp;"),
@@ -1401,12 +1390,12 @@ def main():
         conversation,list_of_messages,names = get_zd_messages(soup,f_pr)
         amended_list = append_identities(list_of_messages,names)
         resp_list = get_intuitSummary(amended_list) 
-        print_bright("__Issue:",lbluef)
-        print_bright(term_print_string(resp_list[0]," "),magf)
-        print_bright("__Actions taken:", lbluef)
-        print_bright(term_print_string(resp_list[1]," "),magf)
-        print_bright("__Now:",lbluef)
-        print_bright(term_print_string(resp_list[2], " "),magf)
+        print_bright("__Issue:",greenf)
+        print_bright(term_print_string(resp_list[0]," "),whitef)
+        print_bright("__Actions taken:", greenf)
+        print_bright(term_print_string(resp_list[1]," "),whitef)
+        print_bright("__Now:",greenf)
+        print_bright(term_print_string(resp_list[2], " "),whitef)
 
     else:
         print_bright("No HTML content found in clipboard. Please copy a Zendesk ticket or chat conversation and try again.",bredf)

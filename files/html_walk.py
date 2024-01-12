@@ -75,6 +75,27 @@ def get_first_pr(soup):
     return comment_text
 
 def get_zd_messages(soup,f_pr):  
+        #Name finder
+    #Takes a div and returns the name of the sender, and appends it to a unique list
+    def name_finder(div):
+        sender_name = "No name"
+        for title in div.find_all_previous('div', {'class': ['sc-1gwyeaa-2 icjiLH','sc-yhpsva-1 dtIjfP']}):
+            strong_text = title.find('strong')
+            if strong_text:
+                sender_name_pre = strong_text.text.strip()
+                if sender_name_pre.find(" "):
+                    sender_name = sender_name_pre.split()[0]
+                break
+        numtal = 0
+        for char in sender_name:
+            assignednum = ord(char)
+            numtal = numtal + assignednum
+        if numtal not in messagecounter:
+            messagecounter.append(numtal)
+            names["support"] = names["support"] + [sender_name]
+        if numtal in messagecounter:
+            index = messagecounter.index(numtal)+1
+
         #Vars for ZD scraping
     class_kandy2 = 'sc-5rafq2-0 gEMoXX'
     class_chat = 'sc-wv3hte-1 epkhmy'
@@ -155,6 +176,7 @@ def get_zd_messages(soup,f_pr):
         print_bright(wrapped_comment+"\n",yellowf) #main printing is happening here
     zd_pr_list = ['sc-54nfmn-1 bthKwz','sc-1qvpxi4-1 lvXye','sc-i0djx2-0 fwLKxM']
     zd_pr_list.extend(pr_classes)
+    zd_in_list = ['sc-54nfmn-1 cfDlbe']
     for div in soup.find_all(['div','bdi'], {'class': zd_pr_list}):
 
         if div is None:

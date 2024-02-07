@@ -282,10 +282,10 @@ def get_zd_messages(soup,f_pr):
     found_colon = zd_messages_str.find(":")
     if found_colon != -1:
         zd_messages_str = zd_messages_str[:found_colon+1] + "\n" + subj + "\n" + zd_messages_str[found_colon+1:]
-    with open(f"{dir_path}/logs/log_last_zd_messages.txt", "w") as f:
-        f.write("ZD MESSAGES including FIRST IN: \n\n" + zd_messages_str)
-    with open(f"{dir_path}/logs/log_last_zd_messages.txt", "a") as f:
-        f.write("\n\n\n\n\n\nfirst_IN FOUND: \n" + first_IN)
+   # with open(f"{dir_path}/logs/log_last_zd_messages.txt", "w") as f:
+   #     f.write("ZD MESSAGES including FIRST IN: \n\n" + zd_messages_str)
+   # with open(f"{dir_path}/logs/log_last_zd_messages.txt", "a") as f:
+   #     f.write("\n\n\n\n\n\nfirst_IN FOUND: \n" + first_IN)
 
     return zd_messages_str, list_of_messages, names
 

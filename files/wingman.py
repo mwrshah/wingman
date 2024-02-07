@@ -29,7 +29,7 @@ def get_resource_path():
         base_path = sys._MEIPASS
     except Exception:
         print("Error: Could not find the resource path in sys._MEIPASS.")
-        base_path = os.path.dirname(os.path.abspath(__file__))
+        base_path = os.path.join(os.path.expanduser("~"), "Documents", "wingman")
     return base_path
 
 #Get the files from the users documents directory

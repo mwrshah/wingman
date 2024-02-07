@@ -15,20 +15,20 @@ The main python scripts are in /files, and of those the one to run is wingman.py
 4. Give the bookmark a name, for example, `fast`.
 5. Move the bookmark to be the first one on the right on your bookmarks bar.
 
-# Using the tool 1-2-3-Paste:
+## Using the tool 1-2-3-Paste:
 
 1. Initialize it
 2. Click bookmarklet
 3. Switch to terminal
 4. Press Enter (if it is the first or last prompt) to reload
 5. Type 're' or 'restart' and Enter if you want to reload from the 'Clue' input.
-6. Enter an instruction
+6. Enter an instruction press enter.
 7. Enter a clue to help it shape the PR. 
 8. Paste: Wait till the DS is populated and paste (Ctrl/Cmd + v) in the IN on Zendesk.
 
 Note: Applying the "Send to QC _[TEMPO]Work)" macro is still necessary. You will have to apply the macro and Ctrl+A/Cmd+A, and remove. Then paste the DS from Wingman.
 
-## Instruction examples:
+### Instruction examples:
 
 - Send to customer.
 - cust.

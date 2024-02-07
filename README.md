@@ -1,5 +1,5 @@
 # Using the python script
-The main python script to run is wingman.py, which imports functions from the other scripts.
+The main python scripts are in /files, and of those the one to run is wingman.py, which imports functions from the other scripts.
 html_walk.py defines the Zendesk ticket parsing
 printing_funk.py defines functions to print to screen/terminal as the program runs
 

@@ -215,6 +215,7 @@ insertion = {
         "cf_treasury" : ["treasury team", " edgar "],
         "cf_generic" : ["collect cash", " cf ", " central fin", "finance" ],
         "cf_wsf" : [" wsf "],
+        "alpha_lang" : ["alpha lang", "language"],
         "sc" : [ " sc ","side conv", "side conversation", " ex ",],
         "bz" : [" bz ", "business ops", "bizops ", "exbz",],
         "bu_jira" : [ " bu jira ", "ibueng", "ignite bu eng", "itpef", "ztps", "business ops", " bz ", "bizops", "exbz",],
@@ -296,6 +297,7 @@ scenario_subsets= {
             "cf_treasury"   :["exjira", "exjiran","exold","exoldn"],
             "cf_generic"    :["exjira", "exjiran","exold","exoldn"],
             "cf_wsf"        :["exjira", "exjiran","exold","exoldn"],
+            "alpha_lang"    :["exalpha","exalphan"],
             "sc"            :["exsc", "exscn","exold","exoldn"],
             "bz"            :["exjira", "exjiran","exold","exoldn"],
             "bu_jira"       :["exjira", "exjiran","exold","exoldn"],
@@ -355,6 +357,8 @@ def get_product(soup):
                 prod_name = label.find_next('div', {'class': 'StyledEllipsis-sc-1u4uqmy-0 gxcmGf'}).text
                 prod_name = prod_name.strip()
                 break
+        if prod_name == "EDU":
+            prod_name = "Alpha"
         return prod_name
 
 def scenario_extractor(instruction_string):
@@ -953,6 +957,20 @@ elements = {
     "intuitPR": "",
     "scrapedPR": "scraped_PR",
     "sumspace": " ",
+    "alphaescinst": """
+
+1. Review the escalation and if you agree. If not just Fail.
+2. Don't fill anything in Escalation Fields and QC'er to check this before submitting.
+3. Deliver the unit in Tempo.
+3. Add an IN: “Escalation QC Pass” .
+4. Set the ZD ticket to Pending. Wait a bit. Once it is in Pending - change Product to the proposed one in the escalation and submit as Open -> this triggers new AL with correct product (with all the credits and no extra ACs).
+    """,
+    "a_team"    : "Proposed Team: &nbsp; ",
+    "a_desc"    : "Description: &nbsp; ",
+    "a_req"     : "Requester: &nbsp; ",
+    "a_student" : "Student Name: &nbsp; ",
+    "a_app"     : "Learning App: ", 
+    "a_date"    : "Date: &nbsp; ",
 }
 
 #Define a function to get input from a text file of the name
@@ -1234,6 +1252,7 @@ meta = ["mhteam", "mhreason", "mhtimer", "mhtarget","ret"]
 jira = ["jirabiz", "prepesc1", "prepesc2", "prepesc3", "prepesc4", "long_prepesc5", "prepesc6","ret"]
 sc = ["sc1", "prepesc2","prepesc3","long_sc4"]
 engesc = ["prepesc2", "prepesc3", "engesc1", "engesc2", "engesc3",]
+alphaesc = ["a_team", "a_desc", "a_req", "a_student", "a_app", "a_date"]
 forms = {
     "l1": sbpre + ["ret"] + ["l1op"] + scntxt + ["blurbtask"], #convert to task
     "cst": sbpre + ["custop"] + spr + gpt + scntxt+ ["ret"], #send to cust
@@ -1241,6 +1260,7 @@ forms = {
     "exold": sbpre + ["extop"] + spr + meta + gpt + scntxt+ ["ret"], #customer update while in escalation
     "ex": sbpre + ["extop"] + spr + meta + scntxt + ["ret"], #escalate but no pr
     "exjira": sbpre + ["extop"] + spr + meta + jira + gpt + scntxt+ ["ret"], #prep esc to saas
+    "exalpha": sbpre + ["alphaescinst"] + spr  + gpt + scntxt+ ["ret"], #prep esc to saas
     "exeng": sbpre + ["extop"] + spr + meta[:4]+["engescds"] + engesc + gpt + scntxt+ ["ret"], #prep esc to eng
     "exb": sbpre + ["extop"] + ["buop"] + spr + meta + ["e2b"] + gpt + scntxt + ["blurbbu"]+ ["ret"], #elevate to bu
     "l2": sbpre + ["l2op"] + spr + gpt + scntxt+ ["ret"], #send to l2
@@ -1259,7 +1279,7 @@ for key, sequence in forms.items():
 forms.update(temp_dict)
 
 
-half_list = ["l1", "cst", "exsc", "exold", "ex", "exjira", "exeng", "exb", "l2", "clst", "clsch", "sum"] 
+half_list = ["l1", "cst", "exsc", "exold", "ex", "exalpha", "exjira", "exeng", "exb", "l2", "clst", "clsch", "sum"] 
 full_list = half_list + [item+"n" for item in half_list]
 
 scenarios_requiring_pr = list(filter(lambda x: x not in ["clsch"], half_list))
@@ -1350,6 +1370,21 @@ def main():
         "intuitPR": "",
         "scrapedPR": "scraped_PR",
         "sumspace": " ",
+        "alphaescinst": """
+
+1. Review the escalation and if you agree. If not just Fail.
+2. Don't fill anything in Escalation Fields and QC'er to check this before submitting.
+3. Deliver the unit in Tempo.
+3. Add an IN: “Escalation QC Pass” .
+4. Set the ZD ticket to Pending. Wait a bit. Once it is in Pending - change Product to the proposed one in the escalation and submit as Open -> this triggers new AL with correct product (with all the credits and no extra ACs).
+    """,
+    "a_team"    : "Proposed Team: &nbsp; ",
+    "a_desc"    : "Description: &nbsp; ",
+    "a_req"     : "Requester: &nbsp; ",
+    "a_student" : "Student Name: &nbsp; ",
+    "a_app"     : "Learning App: ", 
+    "a_date"    : "Date: &nbsp; ",
+
     }
     #repopulate elements from _orig
     global elements

@@ -1,3 +1,7 @@
+# Using the python script
+The main python script to call is wingman.py, which in turn calls the other scripts as subprocesses
+
+
 # Using the tool 1-2-3-Paste:
 
 1. Initialize it

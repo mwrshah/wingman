@@ -3,6 +3,18 @@ The main python scripts are in /files, and of those the one to run is wingman.py
 - html_walk.py defines the Zendesk ticket parsing
 - printing_funk.py defines functions to print to screen/terminal as the program runs
 
+
+## Make a Bookmarklet for Scraping HTML Source on open page 
+
+1. Open Google Chrome. If the bookmarks bar is not visible, press `Ctrl+Shift+B` or navigate through the menu by clicking on the ellipses `⋮`, then `Bookmarks > Show Bookmarks Bar`.
+2. Right-click your bookmarks bar and select `Add Page`.
+3. In the URL field, paste the following JavaScript code:
+   ```javascript
+   javascript:(function() { var htmlContent = document.documentElement.outerHTML; navigator.clipboard.writeText(htmlContent); })();
+   ```
+4. Give the bookmark a name, for example, `fast`.
+5. Move the bookmark to be the first one on the right on your bookmarks bar.
+
 # Using the tool 1-2-3-Paste:
 
 1. Initialize it

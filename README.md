@@ -1,7 +1,7 @@
 # Using the python script
 The main python scripts are in /files, and of those the one to run is wingman.py, which imports functions from the other scripts.
-html_walk.py defines the Zendesk ticket parsing
-printing_funk.py defines functions to print to screen/terminal as the program runs
+- html_walk.py defines the Zendesk ticket parsing
+- printing_funk.py defines functions to print to screen/terminal as the program runs
 
 # Using the tool 1-2-3-Paste:
 

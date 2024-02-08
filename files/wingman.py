@@ -14,10 +14,11 @@ import platform #Used for clear only
 import time
 import configparser
 import yaml
-
+import hidden_key
 #Import submodules from the same directory
 from html_walk import get_zd_messages, get_first_pr 
 from printing_funk import *
+import hidden_key
 
 #javascript:(function() { var htmlContent = document.documentElement.outerHTML; navigator.clipboard.writeText(htmlContent); })();
 
@@ -125,7 +126,22 @@ except Exception as e:
     print("An error occured while loading the hidden_key.txt file.")
     print(e)
 
+if not api_key:
+    try:
+        with open(os.path.join(set_dir_path, 'hidden_key.txt'),'r') as f:
+            api_key = f.read().strip()
+    except FileNotFoundError:
+        print("The hidden_key.txt file was not found in ~/Documents/wingman/appdata.")
 
+if not api_key:
+    try:
+        api_key = hidden_key.api_key
+    except AttributeError:
+        print("The api_key was not found in hidden_key.py")
+
+os.environ["OPENAI_API_KEY"]= api_key
+
+#get the prompts
 try: 
     with open(os.path.join(set_dir_path, 'prompts.yaml'),'r') as f:
         prompts = yaml.safe_load(f)
@@ -134,7 +150,7 @@ except FileNotFoundError:
 except Exception as e:
     print("An error occured while loading the prompts.yaml file.")
     print(e)
-os.environ["OPENAI_API_KEY"]= api_key
+
 
 
 #Global scope vars for printing
@@ -1287,7 +1303,6 @@ scenarios_requiring_esc = [item for item in full_list if item.startswith("e") an
 
 
 def main():
-    clear_terminal() #debug
     #Global scope vars for printing
     terminal_width = shutil.get_terminal_size().columns
     chrt = "|" #· ⋮

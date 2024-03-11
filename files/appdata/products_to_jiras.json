@@ -1,4 +1,6 @@
 {	
+	"Influitive": ["https://trilogy-eng.atlassian.net/browse/AHUB", "no jira" ],
+
       "GFI - MailEssentials": ["https://trilogy-eng.atlassian.net/browse/GFIME", "https://workstation-df.atlassian.net/browse/MEDEV" ],
                                                               "Verdiem": ["https://trilogy-eng.atlassian.net/browse/VERD", "no jira" ],
                 "OneSCM": ["https://trilogy-eng.atlassian.net/browse/OSCMENT", "https://workstation-df.atlassian.net/browse/OSCMMOL" ],

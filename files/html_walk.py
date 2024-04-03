@@ -54,11 +54,10 @@ def preserve_newlines(tag):
 
 def get_first_pr(soup):
         #Vars for ZD scraping
-    class_kandy2 = 'sc-5rafq2-0 gEMoXX'
     class_chat = 'sc-wv3hte-1 epkhmy'
     class_chat2 = 'sc-wv3hte-0 eKImJ'
     class_AI_integration = "sc-5rafq2-0 sc-7uf44v-0 gXPtvy"
-    pr_classes = [class_kandy2,class_chat,class_chat2,class_AI_integration, "sc-11lm90w-0 dehgfD","sc-54nfmn-2 bLEhML"]
+    pr_classes = ['sc-5rafq2-0 gEMoXX',class_chat,class_chat2,class_AI_integration, "sc-11lm90w-0 dehgfD","sc-54nfmn-2 bLEhML","sc-54nfmn-1 eksNum","sc-54nfmn-2 jqMmnW"]
         #BEGIN
     comment_text = ""
     class_list_firstpr = ['sc-54nfmn-1 bthKwz','sc-1qvpxi4-1 lvXye','sc-i0djx2-0 fwLKxM']
@@ -97,11 +96,10 @@ def get_zd_messages(soup,f_pr):
             index = messagecounter.index(numtal)+1
 
         #Vars for ZD scraping
-    class_kandy2 = 'sc-5rafq2-0 gEMoXX'
     class_chat = 'sc-wv3hte-1 epkhmy'
     class_chat2 = 'sc-wv3hte-0 eKImJ'
     class_AI_integration = "sc-5rafq2-0 sc-7uf44v-0 gXPtvy"
-    pr_classes = [class_kandy2,class_chat,class_chat2,class_AI_integration, "sc-11lm90w-0 dehgfD","sc-54nfmn-2 bLEhML"]
+    pr_classes = ['sc-5rafq2-0 gEMoXX',class_chat,class_chat2,class_AI_integration, "sc-11lm90w-0 dehgfD","sc-54nfmn-2 bLEhML","sc-54nfmn-1 eksNum","sc-54nfmn-2 jqMmnW"]
     
         #BEGIN
     zd_messages = []
